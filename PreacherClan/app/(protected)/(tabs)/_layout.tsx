@@ -4,6 +4,7 @@ import { Home, Search, Users, User2 , DumbbellIcon , PlusSquareIcon } from 'luci
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React from 'react';
+import { ProtectedScreen } from '@/components/Protected/ProtectedRoute';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -11,6 +12,7 @@ export default function TabLayout() {
   const inactiveColor = "#8e8e93";
 
   return (
+
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -20,16 +22,23 @@ export default function TabLayout() {
           borderTopWidth: 1,
           borderColor: "#2B2B2B",
           borderWidth: 0.6,
-          marginBottom: 18,
+          marginBottom: 14,
           marginHorizontal: 10,
-          borderRadius: 15,
+          borderRadius: 12,
           height: 80,
           overflow: "hidden",
           position: "absolute",
           paddingTop:15,
           alignItems: "center",
           justifyContent: "center",
-        }
+
+            
+        },
+         tabBarLabelStyle: {
+          fontFamily: 'ScienceGothic', 
+          fontSize: 11,
+
+        },
       }}
     >
 
@@ -45,7 +54,14 @@ export default function TabLayout() {
               strokeWidth={focused ? 2.2 : 1.7}
             />
           ),
+          headerTitleStyle: {
+            fontFamily: 'BBH-Bartle', 
+            fontSize: 16,
+            color: '#ffffff',
+          },
+
         }}
+        
       />
 
       {/* Search */}

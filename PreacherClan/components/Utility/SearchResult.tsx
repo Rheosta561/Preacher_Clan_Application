@@ -8,13 +8,13 @@ interface SearchResultProps {
 
 const SearchResult = ({ name, image }: SearchResultProps) => {
   return (
-    <TouchableOpacity className="flex flex-row items-center p-3 bg-white/10 rounded-md mb-2">
+    <TouchableOpacity className="flex flex-row items-center p-3 bg-[] rounded-md mb-2">
       <Image 
         source={{ uri: image }}
         className="h-12 w-12 rounded-xl mr-3"
       />
 
-      <Text className="text-white font-medium text-lg">{name}</Text>
+      <Text className="text-white font-bartle text-lg ">{name}</Text>
     </TouchableOpacity>
   );
 };

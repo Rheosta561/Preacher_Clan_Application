@@ -37,7 +37,7 @@ export default function GymInfoCard({ gym }: { gym: Gym }) {
   };
 
   return (
-    <View className="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-lg w-[380px] max-w-md">
+    <View className="bg-red-600 border border-zinc-800 rounded-xl overflow-hidden shadow-lg w-[380px] max-w-md">
       
       {/* IMAGE + BADGES */}
       <View className="relative">
@@ -50,39 +50,39 @@ export default function GymInfoCard({ gym }: { gym: Gym }) {
         {/* Featured */}
         {featured && (
           <View className="absolute top-2 left-2 bg-yellow-500 px-2 py-1 rounded">
-            <Text className="text-black text-xs font-bold">Featured</Text>
+            <Text className="text-black text-xs font-ScienceGothic font-semibold">Featured</Text>
           </View>
         )}
 
         {/* Location badge */}
         <View className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded flex flex-row items-center gap-1">
           <MapPin size={14} color="#fb5656" />
-          <Text className="text-white text-xs">{location}</Text>
+          <Text className="text-white text-xs font-ScienceGothic">{location}</Text>
         </View>
 
         {/* Distance */}
         <View className="absolute top-2 right-2 bg-black/60 px-2 py-1 rounded">
-          <Text className="text-white text-xs">{distance}</Text>
+          <Text className="text-white text-xs font-ScienceGothic">{distance}</Text>
         </View>
       </View>
 
       {/* DETAILS */}
       <View className="p-5">
-        <Text className="text-2xl font-bold text-white mb-4">{name}</Text>
+        <Text className="text-lg font-bartle  text-black mb-4">{name}</Text>
 
         <View className="space-y- mb-5">
 
               
           <View className="flex mb-2 flex-row gap-3">
-            <Dumbbell size={20} color="#34d399" className="mt-1" />
+            <Dumbbell size={20} color="#000000" className="mt-1" />
 
             <View className="flex flex-row flex-wrap gap-2">
               {equipments.map((item, index) => (
                 <View
                   key={index}
-                  className="bg-zinc-800 px-2 py-1 rounded"
+                  className="bg-zinc-950 px-2 py-1 rounded"
                 >
-                  <Text className="text-zinc-200 text-xs">{item}</Text>
+                  <Text className="text-zinc-200 text-xs fonts">{item}</Text>
                 </View>
               ))}
             </View>
@@ -90,17 +90,17 @@ export default function GymInfoCard({ gym }: { gym: Gym }) {
 
           {/* Fees */}
           <View className="flex flex-row mb-2 items-center gap-3">
-            <Wallet2 size={20} color="#facc15" />
-            <Text className="text-zinc-300">
-              Monthly Fee: <Text className="text-white font-medium">₹{fees}</Text>
+            <Wallet2 size={20} color="#000000" />
+            <Text className="text-zinc-950 font-ScienceGothic">
+              Monthly Fee: <Text className="text-black font-medium">₹{fees}</Text>
             </Text>
           </View>
 
           {/* Rating */}
           <View className="flex flex-row items-center gap-4">
-            <Star size={18} color="#facc15" fill="#facc15" />
-            <Text className="text-zinc-300 ">
-              Rating: <Text className="text-white font-medium">{rating} / 5</Text>
+            <Star size={18} color="#000000" fill="#facc15" />
+            <Text className="text-zinc-950 font-ScienceGothic ">
+              Rating: <Text className="text-black font-medium">{rating} / 5</Text>
             </Text>
           </View>
         </View>
@@ -108,9 +108,9 @@ export default function GymInfoCard({ gym }: { gym: Gym }) {
         {/* JOIN BUTTON */}
         <TouchableOpacity
           onPress={handleClick}
-          className="w-full py-2 rounded-md bg-zinc-50 active:bg-zinc-900"
+          className="w-full py-2 rounded-md bg-zinc-950 active:bg-zinc-900/80"
         >
-          <Text className="text-center text-zinc-950 font-semibold text-sm">
+          <Text className="text-center text-white  font-ScienceGothic text-sm">
             Join Now
           </Text>
         </TouchableOpacity>
