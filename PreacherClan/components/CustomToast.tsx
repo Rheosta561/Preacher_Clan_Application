@@ -53,12 +53,18 @@ const CustomToast: React.FC<Props> = ({
 
   return (
     <Animated.View
+      pointerEvents="box-none" 
       style={style}
-      className={`absolute w-[90%] top-14 self-center px-4 py-3 rounded-lg ${bg}`}
+      className={`absolute w-[90%] top-14 z-50 self-center px-4 py-3 rounded-lg ${bg}`}
     >
-      <Text className="text-white font-semibold font-ScienceGothic ">{title}</Text>
+      <Text className="text-white font-semibold font-ScienceGothic">
+        {title}
+      </Text>
+
       {message && (
-        <Text className="text-zinc-200 text-sm mt-1 font-ScienceGothic">{message}</Text>
+        <Text className="text-zinc-200 text-sm mt-1 font-ScienceGothic">
+          {message}
+        </Text>
       )}
     </Animated.View>
   );

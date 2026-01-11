@@ -9,7 +9,11 @@ import React, { useEffect, useRef, useState } from 'react'
 import GetStartedCard from '@/components/Getting_Started/GetStartedCard'
 import { useRouter } from 'expo-router'
 
+
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
+
+
 
 const DATA = [
   {

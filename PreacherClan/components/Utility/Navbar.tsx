@@ -50,6 +50,9 @@ export default function Navbar() {
     router.push('/(protected)/profile');
   };
 
+  const handleChatPress = ()=>{
+    router.push('/(protected)/chats');
+  }
 
   return (
     <View className="absolute z-50 h-40   w-full">
@@ -67,7 +70,7 @@ export default function Navbar() {
         </View>
          <View className='w-full'>
           <Text className='text-white text-lg font-ScienceGothic' >Hi {user?.name || 'User'}</Text>
-        <Text className='text-zinc-200 text-xs font-ScienceGothic ' >Preacher Score | 0</Text>
+        <Text className='text-zinc-200 text-xs font-ScienceGothic ' >Preacher Score | {user?.preacherScore}</Text>
 
         </View>
         </TouchableOpacity>
@@ -80,7 +83,7 @@ export default function Navbar() {
         <View className="flex flex-row h-full mr-8 items-center gap-4 px-3">
 
       {/* Chat Button */}
-      <TouchableOpacity className="p-2 rounded-full ">
+      <TouchableOpacity className="p-2 rounded-full " onPress={handleChatPress}>
         <MessageSquare size={24} color="white" strokeWidth={2} />
       </TouchableOpacity>
 

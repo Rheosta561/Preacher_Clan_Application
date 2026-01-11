@@ -14,7 +14,7 @@ export const mapUserToProfileCard = (user: any) => {
       "Fitness",
 
     time:
-      user.profile?.exerciseGenre?.[0] ||
+      user.profile?.timings ||
       "Flexible",
 
     tags: [

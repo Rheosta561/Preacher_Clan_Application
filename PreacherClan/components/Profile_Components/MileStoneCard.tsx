@@ -1,3 +1,4 @@
+import { useUser } from '@/context/userContext'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useState, useEffect } from 'react'
 import { View, Text } from 'react-native'
@@ -7,11 +8,13 @@ export default function MileStoneCard() {
   const [status, setStatus] = useState<string>('')
   const [score, setScore] = useState<number>(0)
 
+  const {user}= useUser();
+
   const fetchProfileStatus = async () => {
     const profile = await AsyncStorage.getItem('profile')
     if (profile) {
-      const parsedProfile = JSON.parse(profile)
-      const preacherScore = parsedProfile.preacherScore || 0
+      const preacherScore = user?.preacherScore ?? 10;
+
 
       setScore(preacherScore)
 

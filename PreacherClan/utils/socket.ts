@@ -21,12 +21,12 @@ class SocketService {
     this.socket.connect();
 
     this.socket.on("connect", () => {
-      console.log("🟢 Socket connected:", this.socket?.id);
+      console.log("Socket connected:", this.socket?.id);
       this.socket?.emit("userOnline", userId);
     });
 
     this.socket.on("disconnect", () => {
-      console.log("🔴 Socket disconnected");
+      console.log("Socket disconnected");
     });
   }
 
@@ -37,6 +37,10 @@ class SocketService {
   emit(event: string, data: any) {
     this.socket?.emit(event, data);
   }
+  off(event: string, callback: (...args: any[]) => void) {
+    this.socket?.off(event, callback);
+  }
+
 
   disconnect() {
     if (this.socket) {

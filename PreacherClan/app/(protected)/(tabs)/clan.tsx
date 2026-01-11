@@ -7,8 +7,14 @@ import InsightCard from "@/components/GymComponents/InsightCard";
 import StreakMarker from "@/components/GymComponents/StreakMaker";
 import ProfileCard from "@/components/ProfileCard";
 import Navbar from "@/components/Utility/Navbar";
+import ClanLeaderCard from "@/components/GymComponents/ClanLeaderCard";
+import { TrainerCardProps } from "@/constants/trainer";
+import { TrainerStatus } from "@/constants/trainer";
+import TrainerCard from "@/components/GymComponents/TrainerCard";
+
 
 const { width } = Dimensions.get("window");
+
 
 interface Profile {
   id: string;
@@ -27,6 +33,13 @@ const Clan: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [members, setMembers] = useState<Profile[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
+const [trainers, setTrainers] = useState<
+  (TrainerCardProps["profile"] & { status?: TrainerStatus })[]
+>([]);
+
+
+
+
 
 
   useEffect(() => {
@@ -34,7 +47,7 @@ const Clan: React.FC = () => {
       {
         id: "1",
         name: "Aarav Singh",
-        image: "",
+        image: "https://i.pinimg.com/736x/b6/6e/2a/b66e2a27f71309a4731ffedd42719ef0.jpg",
         goal: "Build Muscle",
         time: "6:00 AM",
         tags: ["hypertrophy", "discipline"],
@@ -45,7 +58,7 @@ const Clan: React.FC = () => {
       {
         id: "2",
         name: "Jane Smith",
-        image: "",
+        image: "./",
         goal: "Weight Loss",
         time: "7:30 AM",
         tags: ["cardio", "HIIT"],
@@ -54,6 +67,33 @@ const Clan: React.FC = () => {
         age: 0,
       },
     ]);
+    setTrainers([
+  {
+    id: "t1",
+    name: "Ragnar Holt",
+    image: "https://i.pinimg.com/736x/0f/2f/42/0f2f42d3b4b7c5a8f8c0c41fd9b1bb8c.jpg",
+    age: 32,
+    goal: "Strength & Conditioning",
+    time: "5:30 AM",
+    tags: ["strength", "powerlifting"],
+    preacherRank: "Elite Trainer",
+    isVerified: true,
+    status: "idle",
+  },
+  {
+    id: "t2",
+    name: "Eivor Kane",
+    image: "https://i.pinimg.com/736x/8d/1c/56/8d1c56fae1ed7d7dbe6a7ef7fd7cbad9.jpg",
+    age: 29,
+    goal: "Fat Loss & Mobility",
+    time: "7:00 AM",
+    tags: ["mobility", "fat-loss"],
+    preacherRank: "Master Trainer",
+    isVerified: true,
+    status: "booked",
+  },
+]);
+
   }, []);
 
   const filteredMembers = members.filter((m) =>
@@ -129,7 +169,42 @@ const Clan: React.FC = () => {
       </View>
     ))}
   </View>
+
+ 
 </ScrollView>
+ <View className="w-full  ">
+    <Text className="text-white text-xl font-semibold font-ScienceGothic mt-6">
+        Clan Leader
+      </Text>
+      {members.length > 0 && <ClanLeaderCard profile={members[0]} clanName="PreacherClan" />}
+     
+  </View>
+  <Text className="text-white text-xl font-semibold font-ScienceGothic mt-8">
+  Trainers
+</Text>
+
+<ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-4 mb-40">
+  <View className="flex-row px-2">
+    {trainers.map((trainer) => (
+      <View key={trainer.id} className="mr-3 w-[320px]">
+        <TrainerCard
+          profile={trainer}
+          status={trainer.status}
+          onBookTrainer={async (trainerId) => {
+            setTrainers((prev) =>
+              prev.map((t) =>
+                t.id === trainerId
+                  ? { ...t, status: "booked" }
+                  : t
+              )
+            );
+          }}
+        />
+      </View>
+    ))}
+  </View>
+</ScrollView>
+
 
     </ScrollView>
     </>

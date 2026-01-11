@@ -75,6 +75,7 @@ export default function Login() {
           name,
           email,
           username,
+          preacherScore : response.data.user.preacherScore || 0  , 
           partner: response.data.user.partner || [],
         }
 

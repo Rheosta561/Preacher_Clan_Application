@@ -140,12 +140,15 @@ const GymBuddyFinderScreen: React.FC = () => {
 
 // send request
   const handleSendRequest = async () => {
+    console.log(currentProfile);
     if (!currentProfile) return;
 
     try {
       await axios.post(
         `${backendUrl}/requests/send/${userId}/${currentProfile.id}`
       );
+
+      console.log('rendering toast');
 
       setToast({
         visible: true,
@@ -169,7 +172,10 @@ const GymBuddyFinderScreen: React.FC = () => {
 
 // reject profile 
   const handleReject = () => {
+    console.log('current Profile ' , currentProfile)
     if (!currentProfile) return;
+
+    console.log('setting toast');
 
     setToast({
       visible: true,
@@ -327,6 +333,11 @@ const GymBuddyFinderScreen: React.FC = () => {
         </View>
       </ScrollView>
 
+      
+
+      <MatchListener />
+
+      </ScrollView> 
       <CustomToast
         visible={toast.visible}
         type={toast.type}
@@ -336,10 +347,6 @@ const GymBuddyFinderScreen: React.FC = () => {
           setToast((prev) => ({ ...prev, visible: false }))
         }
       />
-
-      <MatchListener />
-
-      </ScrollView>
       
     </View>
   );

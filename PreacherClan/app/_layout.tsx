@@ -14,6 +14,9 @@ import { UserProvider } from '@/context/userContext';
 import { Protected } from 'expo-router/build/views/Protected';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
+import { Buffer } from "buffer";
+global.Buffer = Buffer;
+
 
 export const unstable_settings = {
   anchor: '(tabs)',

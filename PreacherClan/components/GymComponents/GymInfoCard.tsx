@@ -10,8 +10,8 @@ type Gym = {
   distance?: string;
   trainers: number | string;
   equipments?: string[];
-  fees: number | string;
-  rating: number;
+  fees?: number | string;
+  rating?: number| undefined;
   featured?: boolean;
   gymId: string | number;
 };
@@ -37,7 +37,7 @@ export default function GymInfoCard({ gym }: { gym: Gym }) {
   };
 
   return (
-    <View className="bg-red-600 border border-zinc-800 rounded-xl overflow-hidden shadow-lg w-[380px] max-w-md">
+    <View className="bg-red-600 border mx-2 border-zinc-800 rounded-xl overflow-hidden shadow-lg w-[380px] max-w-md">
       
       {/* IMAGE + BADGES */}
       <View className="relative">

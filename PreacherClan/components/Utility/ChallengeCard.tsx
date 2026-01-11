@@ -15,7 +15,18 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({
   buttonText = "Join Now",
   image,
   onPress,
-}) => {
+}) => 
+  
+  
+  {
+    const truncateWords = (text: string, limit = 10) => {
+  if (!text) return "";
+  const words = text.split(" ");
+  return words.length > limit
+    ? words.slice(0, limit).join(" ") + "..."
+    : text;
+};
+
   return (
     <View className="h-44 rounded-lg bg-red-600 flex flex-row p-3 items-center">
       
@@ -32,8 +43,9 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({
         </Text>
 
         <Text className="text-zinc-950 text-xs font-medium font-ScienceGothic">
-          {description}
-        </Text>
+  {truncateWords(description, 20)}
+</Text>
+
 
         <TouchableOpacity
           onPress={onPress}

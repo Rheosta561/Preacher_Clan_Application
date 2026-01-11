@@ -170,7 +170,10 @@ console.log("normalised profile \n", normalizedProfile.repmates);
       }
     );
 
+   
+
     const data = await res.json();
+    
 
     console.log('profile update status' , res.status);
 
@@ -194,7 +197,9 @@ console.log("normalised profile \n", normalizedProfile.repmates);
 
   // logut 
   const logout = async () => {
-    await AsyncStorage.multiRemove(["user", "profile"]);
+    await AsyncStorage.multiRemove(["user", "profile" ]);
+    await AsyncStorage.clear();
+    // await useUser().logout();
     await clearUser();
     router.replace("/(auth)/login");
   };

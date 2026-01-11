@@ -26,7 +26,7 @@ interface Profile {
 
 
 
-type RequestStatus = "idle" | "sent" | "alreadySent" | "error";
+type RequestStatus = "idle" | "sent" | "alreadySent" | "error" | "alreadyAccepted";
 
 const ProfileCard = ({ profile }: { profile: Profile }) => {
   const {
@@ -97,7 +97,11 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
           text1: "Already Sent",
           text2: "You have already sent a request",
         });
-      } else {
+      }else if(axiosError.response?.status==401){
+        setRequestStatus('alreadyAccepted');
+        
+      }
+       else {
         setRequestStatus("error");
 
         Toast.show({
@@ -122,7 +126,8 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
     isSelf ||
     loading ||
     requestStatus === "sent" ||
-    requestStatus === "alreadySent";
+    requestStatus === "alreadySent" ||
+    requestStatus==="alreadyAccepted" ; 
 
   return (
     <MotiView
@@ -188,14 +193,14 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
           onPress={sendRequestHandler}
           className={`mt-4 w-full py-2 rounded-md ${
             isDisabled
-              ? "bg-zinc-800 opacity-40"
+              ? "bg-zinc-50 "
               : "bg-zinc-950"
           }`}
         >
           <Text
             className={`text-center text-sm font-ScienceGothic ${
               isDisabled
-                ? "text-zinc-500"
+                ? "text-zinc-900"
                 : "text-zinc-50"
             }`}
           >
@@ -209,6 +214,8 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
               ? "Already Sent"
               : requestStatus === "error"
               ? "Retry"
+              : requestStatus === "alreadyAccepted" 
+              ? "Already A Repmate"
               : "Send Request"}
           </Text>
         </TouchableOpacity> }

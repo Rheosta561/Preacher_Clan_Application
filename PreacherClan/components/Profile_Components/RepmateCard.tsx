@@ -8,6 +8,7 @@ import {
   UserX,
 } from 'lucide-react-native'
 import { Repmate_Profile } from '@/constants/constants'
+import { useUser } from '@/context/userContext'
 
 // interface Props {
 //   name: string
@@ -22,8 +23,17 @@ export default function RepMateCard({
   username , 
   profileImage,
 }: Repmate_Profile) {
-  const router = useRouter()
+const router = useRouter()
+
+const {user} = useUser(); 
+const userId = user?.id ; 
   const [open, setOpen] = useState(false)
+const openChat = (receiverId: string, chatName: string) => {
+    router.push({
+      pathname: "/(protected)/chats/ChatScreen",
+      params: { id: receiverId, name: chatName }
+    });
+  };
 
   return (
     <View className="relative bg-zinc-900 border border-zinc-800 rounded-lg p-4">
@@ -54,8 +64,7 @@ export default function RepMateCard({
           <TouchableOpacity
             onPress={() => {
               setOpen(false)
-              // router.push(`/chat/${receiverId}`)
-              console.log('Chat with', _id)
+              openChat(_id , name);
             }}
             className="flex-row items-center gap-3 px-4 py-3 border-b border-zinc-700"
           >

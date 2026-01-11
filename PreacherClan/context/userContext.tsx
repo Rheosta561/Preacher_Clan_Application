@@ -48,6 +48,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await AsyncStorage.removeItem('user')
       await AsyncStorage.clear();
+
       setUser(null)
     } catch (err) {
       console.error('Logout failed', err)

@@ -121,14 +121,14 @@ export default function SearchScreen() {
       
       {/* Search Bar */}
       <View className="w-full mb-4">
-        <View className="relative">
-          <Search size={20} color="#a1a1aa" style={{ position: "absolute", left: 10, top: 14 }} />
+        <View className="relative flex flex-row px-4  items-center bg-zinc-900 gap-2 p-2 rounded-lg">
+          <Search size={20} color="white"  />
           <TextInput
             placeholder="Search gyms or users..."
             placeholderTextColor="#71717a"
             value={query}
             onChangeText={setQuery}
-            className="w-full bg-zinc-800 text-white px-10 py-3 rounded-md text-sm"
+            className="w-full  text-white font-ScienceGothic  py-3 rounded-md text-sm"
           />
         </View>
       </View>
