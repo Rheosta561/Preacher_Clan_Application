@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "PreacherClan"
+		},
+		{
+			"path": "../../PreacherClan Web/Backend"
+		},
+		{
+			"path": "../../PreacherClan Web/Frontend/PreacherClan"
+		}
+	],
+	"settings": {}
+}
