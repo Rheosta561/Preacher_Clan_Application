@@ -2,6 +2,31 @@
 
 # dependencies
 node_modules/
+# Firebase / Google credentials
+google-services.json
+preacherclan-bafc6-firebase-adminsdk-fbsvc-99844126ca.json
+
+# Firebase Admin SDK (generic)
+*-firebase-adminsdk-*.json
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+
+# Node
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+
+
 
 # Expo
 .expo/
