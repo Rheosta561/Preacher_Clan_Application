@@ -17,7 +17,7 @@ type ChatContextType = {
   currentChatId: string | null;
   setCurrentChatId: (id: string | null) => void;
 
-  remoteTyping: boolean;   // 👈 ONLY other user typing
+  remoteTyping: boolean;   // ONLY other user typing
 };
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -26,7 +26,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
-  // 👇 only for OTHER user typing
+  // only for OTHER user typing
   const [remoteTyping, setRemoteTyping] = useState(false);
 
   const [toast, setToast] = useState({
