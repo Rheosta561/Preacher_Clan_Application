@@ -14,6 +14,9 @@ import * as ImagePicker from 'expo-image-picker'
 import { useRouter } from 'expo-router'
 import axios from 'axios'
 import { useUser } from '@/context/userContext'
+import { apiFetch } from '@/utils/Auth/apiFetch'
+import { ActivityIndicator } from 'react-native'
+
 
 /* =======================
    INTERFACES
@@ -73,9 +76,11 @@ const EXERCISE_GENRES = ['Cardio', 'Weight Training', 'CrossFit']
 
 export default function Onboarding() {
   const router = useRouter()
-  const { user } = useUser()
+  const { user , updateUser } = useUser()
 
   const [step, setStep] = useState(1)
+  const [loading, setLoading] = useState(false)
+
 
   
 
@@ -130,42 +135,48 @@ export default function Onboarding() {
   const next = () => step < TOTAL_STEPS && setStep(step + 1)
   const back = () => step > 1 && setStep(step - 1)
 
-  const submit = async () => {
-    try {
-      if (!user) return
+const submit = async () => {
+  try {
+    if (!user) return
 
-      const form = new FormData()
-      if (profileImage)
-        form.append('profileImage', {
-          uri: profileImage.uri,
-          name: 'profile.jpg',
-          type: 'image/jpeg',
-        } as any)
+    setLoading(true)
 
-      if (coverImage)
-        form.append('coverImage', {
-          uri: coverImage.uri,
-          name: 'cover.jpg',
-          type: 'image/jpeg',
-        } as any)
+    const form = new FormData()
 
-      form.append('about', about)
-      form.append('socialHandles', JSON.stringify(social))
-      form.append('fitnessGoals', JSON.stringify(fitnessGoals))
-      form.append('ambition', JSON.stringify(ambition))
-      form.append('exerciseGenre', JSON.stringify(exerciseGenre))
+    if (profileImage)
+      form.append('profileImage', {
+        uri: profileImage.uri,
+        name: 'profile.jpg',
+        type: 'image/jpeg',
+      } as any)
 
-      const backend = process.env.EXPO_PUBLIC_BACKEND_URL
+    if (coverImage)
+      form.append('coverImage', {
+        uri: coverImage.uri,
+        name: 'cover.jpg',
+        type: 'image/jpeg',
+      } as any)
 
-      await axios.post(`${backend}/profile/${user.id}`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+    form.append('about', about)
+    form.append('socialHandles', JSON.stringify(social))
+    form.append('fitnessGoals', JSON.stringify(fitnessGoals))
+    form.append('ambition', JSON.stringify(ambition))
+    form.append('exerciseGenre', JSON.stringify(exerciseGenre))
 
-      router.replace('/(protected)/(tabs)')
-    } catch (err) {
-      Alert.alert('Error', 'Profile creation failed')
-    }
+    await apiFetch(`/profile/${user.id}`, {
+      method: 'POST',
+      body: form,
+    })
+
+    updateUser({ onboardingCompleted: true })
+    router.replace('/(protected)/(tabs)')
+  } catch (err) {
+    Alert.alert('Error', 'Profile creation failed')
+  } finally {
+    setLoading(false)
   }
+}
+
 
   /* =======================
      UI
@@ -326,6 +337,15 @@ export default function Onboarding() {
           </TouchableOpacity>
         )}
       </View>
+      {loading && (
+  <View className="absolute inset-0 bg-black/70 items-center justify-center z-50">
+    <ActivityIndicator size="large" color="#22c55e" />
+    <Text className="text-white text-center  mt-4 font-ScienceGothic">
+      Creating your profile...
+    </Text>
+  </View>
+)}
+
     </ScrollView>
   )
 }

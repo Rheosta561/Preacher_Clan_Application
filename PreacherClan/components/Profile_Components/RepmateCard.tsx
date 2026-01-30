@@ -9,6 +9,8 @@ import {
 } from 'lucide-react-native'
 import { Repmate_Profile } from '@/constants/constants'
 import { useUser } from '@/context/userContext'
+import { apiFetch } from '@/utils/Auth/apiFetch'
+import { showToast } from '@/utils/showToast'
 
 // interface Props {
 //   name: string
@@ -17,17 +19,24 @@ import { useUser } from '@/context/userContext'
 //   receiverId: string
 // }
 
+
+
 export default function RepMateCard({
   _id , 
   name,
   username , 
   profileImage,
+  onRemove
+
 }: Repmate_Profile) {
 const router = useRouter()
+
+
 
 const {user} = useUser(); 
 const userId = user?.id ; 
   const [open, setOpen] = useState(false)
+
 const openChat = (receiverId: string, chatName: string) => {
     router.push({
       pathname: "/(protected)/chats/ChatScreen",
@@ -45,7 +54,14 @@ const openChat = (receiverId: string, chatName: string) => {
             className="h-14 w-14 rounded-full"
           />
           <View>
-            <Text className="text-white font-semibold font-bartle text-sm">{name}</Text>
+            <Text
+  numberOfLines={2}
+  ellipsizeMode="tail"
+  className="text-white font-semibold font-bartle text-sm max-w-[250px]"
+>
+  {name}
+</Text>
+
             <Text className="text-zinc-400 text-sm font-ScienceGothic">{username}</Text>
           </View>
         </View>
@@ -86,10 +102,7 @@ const openChat = (receiverId: string, chatName: string) => {
 
           {/* Remove friend */}
           <TouchableOpacity
-            onPress={() => {
-              setOpen(false)
-              console.log('Removed friend')
-            }}
+            onPress={onRemove}
             className="flex-row items-center gap-3 px-4 py-3"
           >
             <UserX size={18} color="#f87171" />

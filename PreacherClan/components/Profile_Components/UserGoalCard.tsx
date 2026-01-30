@@ -11,10 +11,34 @@ import DateTimePicker from '@react-native-community/datetimepicker'
 interface Props {
   fitnessGoals: string[]
   exerciseGenre: string[]
+  timings ? :string 
   onUpdateFitnessGoals?: (goals: string[]) => void
   onUpdateExerciseGenre?: (genres: string[]) => void
   onTimingChange?: (timing: string) => void
   onEditStart?: () => void
+}
+function parseTiming(timing?: string) {
+  if (!timing) return null
+
+  // Custom format: "Evening 12:35–13:30"
+  const customMatch = timing.match(
+    /^(Morning|Evening)\s+(\d{1,2}:\d{2})–(\d{1,2}:\d{2})$/
+  )
+
+  if (customMatch) {
+    return {
+      type: 'custom' as const,
+      period: customMatch[1] as 'Morning' | 'Evening',
+      start: customMatch[2],
+      end: customMatch[3],
+    }
+  }
+
+  // Preset format: "Morning 8–10"
+  return {
+    type: 'preset' as const,
+    slot: timing,
+  }
 }
 
 export default function UserGoalCard({
@@ -24,6 +48,7 @@ export default function UserGoalCard({
   onUpdateExerciseGenre,
   onTimingChange,
   onEditStart,
+  timings
 }: Props) {
   const [editing, setEditing] = useState(false)
 
@@ -36,12 +61,12 @@ export default function UserGoalCard({
   }, [fitnessGoals])
 
   /* -------- TIMINGS -------- */
-  const [preferredSlot, setPreferredSlot] =
-    useState<string>('Morning 5–7')
-  const [customPeriod, setCustomPeriod] =
-    useState<'Morning' | 'Evening'>('Morning')
-  const [startTime, setStartTime] = useState(new Date())
-  const [endTime, setEndTime] = useState(new Date())
+  const [preferredSlot, setPreferredSlot] = useState<string>('Morning 5–7')
+const [customPeriod, setCustomPeriod] =
+  useState<'Morning' | 'Evening'>('Morning')
+const [startTime, setStartTime] = useState(new Date())
+const [endTime, setEndTime] = useState(new Date())
+
   const [showStartPicker, setShowStartPicker] = useState(false)
   const [showEndPicker, setShowEndPicker] = useState(false)
 
@@ -55,6 +80,45 @@ export default function UserGoalCard({
 
   /* -------- ANIMATIONS -------- */
   const anims = useRef<Animated.Value[]>([]).current
+
+
+  const onStartTimeChange = (_: any, selected?: Date) => {
+  setShowStartPicker(false)
+  if (selected) setStartTime(selected)
+}
+
+const onEndTimeChange = (_: any, selected?: Date) => {
+  setShowEndPicker(false)
+  if (selected) setEndTime(selected)
+}
+
+
+useEffect(() => {
+  const parsed = parseTiming(timings)
+  if (!parsed) return
+
+  if (parsed.type === 'preset') {
+    setPreferredSlot(parsed.slot)
+  }
+
+  if (parsed.type === 'custom') {
+    setPreferredSlot('Other')
+    setCustomPeriod(parsed.period)
+
+    const [sh, sm] = parsed.start.split(':').map(Number)
+    const [eh, em] = parsed.end.split(':').map(Number)
+
+    const start = new Date()
+    start.setHours(sh, sm, 0)
+
+    const end = new Date()
+    end.setHours(eh, em, 0)
+
+    setStartTime(start)
+    setEndTime(end)
+  }
+}, [timings])
+
 
   // Keep anim array in sync
   useEffect(() => {
@@ -275,6 +339,26 @@ export default function UserGoalCard({
           </TouchableOpacity>
         </>
       )}
+      {showStartPicker && (
+  <DateTimePicker
+    value={startTime}
+    mode="time"
+    is24Hour={false}
+    display="default"
+    onChange={onStartTimeChange}
+  />
+)}
+
+{showEndPicker && (
+  <DateTimePicker
+    value={endTime}
+    mode="time"
+    is24Hour={false}
+    display="default"
+    onChange={onEndTimeChange}
+  />
+)}
+
     </View>
   )
 }

@@ -24,6 +24,7 @@ export interface ChatMessage {
   timestamp: Date | string;
   replyTo?: string | null;
   status?: "sending" | "sent" | "failed";
+  isDeleted? : boolean 
 }
 
 

@@ -1,4 +1,5 @@
 export const mapUserToProfileCard = (user: any) => {
+  console.log('user received for mapping', user);
   return {
     id: user._id,
     image:
@@ -19,7 +20,8 @@ export const mapUserToProfileCard = (user: any) => {
 
     tags: [
       ...(user.profile?.ambition || []),
-      ...(user.profile?.exerciseGenre || [])
+      ...(user.profile?.exerciseGenre || []),
+      ...(user.profile?.fitnessGoals || []),
     ].slice(0, 4),
     
 

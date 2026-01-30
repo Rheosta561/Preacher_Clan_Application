@@ -29,6 +29,7 @@ export interface ChatCardProps {
   onPress?: (id: string, chatName: string) => void;
   onDelete?: (id: string) => void;
   onArchive?: (id: string) => void;
+  chatId : string 
 }
 
 
@@ -46,6 +47,7 @@ const ChatCard = ({
   onPress,
   onDelete,
   onArchive,
+  chatId
 }: ChatCardProps) => {
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -130,7 +132,7 @@ const ChatCard = ({
               Conversation Options
             </Text>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => {
                 setMenuOpen(false);
                 onArchive?.(id);
@@ -140,7 +142,7 @@ const ChatCard = ({
               <Text className="text-white text-center font-ScienceGothic">
                 Archive Chat
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <TouchableOpacity
               onPress={() => {

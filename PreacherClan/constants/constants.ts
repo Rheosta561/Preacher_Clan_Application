@@ -1,5 +1,17 @@
-// ================= PROFILE =================
+// location point 
+export interface GeoPoint {
+  type: "Point";
+  coordinates: [number, number]; // [longitude, latitude]
+  updatedAt?: string | Date;
+}
 
+
+// ================= PROFILE =================
+export interface useClan{
+  _id : string ;
+  name : string ;
+  profileImage : string ; 
+}
 export interface Profile {
   id: string;
   image: string;
@@ -12,6 +24,7 @@ export interface Profile {
   isVerified: boolean;
   onSendRequest?: ()=> void ; 
   hideaction : boolean ; 
+  clan? : useClan ;
 }
 // interfaces/profile.ts
 
@@ -70,7 +83,15 @@ export interface IUser {
     todayUpdated: boolean
   }
 
+  gym?:{
+    id: string ;
+    name : string ; 
+  }
+location?: GeoPoint;
+
+
   preacherScore?: number
+  onboardingCompleted?:boolean
 }
 
 export interface IUserWithProfile extends IUser {
@@ -80,15 +101,23 @@ export interface IUserWithProfile extends IUser {
   ambition? : string[]
   exerciseGenre? : string[]
   timings? : string 
-  repmates? : RepMateRequest[]
+  repmates?: Repmate_Profile[]
+
 }
 
 
 // ================= REQUEST =================
+export interface MiniProfile {
+  id: string;
+  name: string;
+  image: string;
+  isVerified: boolean;
+  
+}
 
 export interface RepMateRequest {
   id: string;
-  profile: Profile;
+  profile: MiniProfile;
   isTrainer: boolean;
   gym: string;
   isVerified: boolean;
@@ -155,11 +184,12 @@ export const images = {
 
 
 export interface Repmate_Profile {
-  _id : string ,
-  name : string , 
-  profileImage : string , 
-  preacherScore : number , 
-  username : string 
-
-
+  _id: string
+  name: string
+  profileImage: string
+  preacherScore: number
+  username: string
+  onRemove?: () => void
+  onPoke?: ()=> void 
 }
+

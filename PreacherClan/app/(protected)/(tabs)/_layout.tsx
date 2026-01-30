@@ -5,11 +5,20 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React from 'react';
 import { ProtectedScreen } from '@/components/Protected/ProtectedRoute';
+import { useUser } from "@/context/userContext";
+import { showToast } from "@/utils/showToast";
+
+
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const activeColor = '#FFFFFF';
   const inactiveColor = "#8e8e93";
+  const { user } = useUser();
+
+  const hasGym = Boolean(user?.gym?.id);
+
+ 
 
   return (
 
@@ -80,19 +89,39 @@ export default function TabLayout() {
       />
 
       {/* Clan */}
-      <Tabs.Screen
-        name="clan"
-        options={{
-          title: 'Clan',
-          tabBarIcon: ({ focused }) => (
-            <DumbbellIcon
-              size={23}
-              color={focused ? activeColor : inactiveColor}
-              strokeWidth={focused ? 2.2 : 1.7}
-            />
-          ),
-        }}
+  <Tabs.Screen
+  name="clan"
+  options={{
+    title: "Clan",
+    tabBarIcon: ({ focused }) => (
+      <DumbbellIcon
+        size={23}
+        color={
+          hasGym
+            ? focused
+              ? activeColor
+              : inactiveColor
+            : "#4b4b4b"
+        }
+        strokeWidth={focused ? 2.2 : 1.7}
       />
+    ),
+  }}
+  listeners={{
+    tabPress: (e) => {
+      if (!hasGym) {
+        e.preventDefault(); //  stop navigation
+        showToast({
+          type: "info",
+          title: "Clan Locked",
+          message: "Join a gym to unlock Clan features",
+        });
+      }
+    },
+  }}
+/>
+
+
 
       {/* Buddy */}
       <Tabs.Screen

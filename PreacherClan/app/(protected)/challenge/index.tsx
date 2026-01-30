@@ -20,7 +20,7 @@ import CustomToast from "@/components/CustomToast";
 
 import { useChallenge } from "@/context/ChallengeContext";
 import VikingCompleted from "@/components/Challenge/ChallengeComplete";
-import axios from "axios";
+import { apiFetch } from "@/utils/Auth/apiFetch";
 import { useUser } from "@/context/userContext";
 
 
@@ -39,6 +39,12 @@ const [toastType, setToastType] = useState<"success" | "error" | "info">("info")
 const [toastTitle, setToastTitle] = useState("");
 const [toastMsg, setToastMsg] = useState("");
 
+interface CompleteChallengeResponse {
+  challenge: any; 
+  message: string;
+  preacherScore?: number;
+}
+
 
 const showToast = (
   type: "success" | "info" | "error",
@@ -55,7 +61,7 @@ const showToast = (
 const hideToast = () => setToastVisible(false);
 const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
 
-const {user} = useUser();
+const {user , logout} = useUser();
 const userId = user?.id;
 
 
@@ -69,26 +75,46 @@ const userId = user?.id;
   /* ---------------- MARK CHALLENGE COMPLETE ---------------- */
 
 
-  const markChallengeCompleted = async () => {
-    const today = new Date().toISOString();
-
-    await AsyncStorage.setItem("lastChallengeCompletedDate", today);
-    try {
-      console.log(userId)
-      const res = await axios.post(`${backendUrl}/challenge/complete/${userId}` , {});
-      console.log('challenge completion response ', res.data);
-      if(res.status===200){
-        setChallenge(res.data.challenge);
-        showToast('success' , `${challenge?.title} achieved` , 'Challenge Completed now inspire others ');
-      }
 
 
-      
-    } catch (error) {
-      console.error('challenge completion error ', error);
-      showToast('error' , 'Server is Busy' , 'Server is busy , try again later ');
+const markChallengeCompleted = async () => {
+  if (!userId) return;
+
+  const today = new Date().toISOString();
+  await AsyncStorage.setItem("lastChallengeCompletedDate", today);
+
+  try {
+    const data = await apiFetch<CompleteChallengeResponse>(
+      `/challenge/complete/${userId}`,
+      {
+        method: "POST",
+        body: {},
+      },
+      logout 
+    );
+
+    setChallenge(data.challenge);
+
+    showToast(
+      "success",
+      `${challenge?.title} achieved`,
+      "Challenge completed. Now inspire others ⚔️"
+    );
+  } catch (error: any) {
+    if (error.message === "SESSION_EXPIRED") {
+      // logout already handled
+      return;
     }
-  };
+
+    console.error("Challenge completion error", error);
+    showToast(
+      "error",
+      "Server Busy",
+      "Server is busy, try again later"
+    );
+  }
+};
+
 
 
   /* PICK IMAGE */

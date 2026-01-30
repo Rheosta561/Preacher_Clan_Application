@@ -10,11 +10,21 @@ export default function ProtectedLayout() {
   const { user, loading } = useUser()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/(promo)/GettingStarted')
-    }
-  }, [user, loading])
+useEffect(() => {
+  if (loading) return
+
+  if (!user) {
+    router.replace('/(promo)/GettingStarted')
+    return
+  }
+  console.log(user);
+  if (!user.onboardingCompleted) {
+    router.replace('/(protected)/onboarding')
+  } else {
+    router.replace('/(protected)/(tabs)')
+  }
+}, [user, loading])
+
 
   if (loading || !user) {
     return (
@@ -53,6 +63,15 @@ export default function ProtectedLayout() {
         name='challenge'
         options={{headerShown: false , animation : 'slide_from_left'}}
         />
+      <Stack.Screen
+        name = 'clan'
+        options={{headerShown:false , animation:'slide_from_right'}} />
+      <Stack.Screen
+        name='notification'
+        options={{headerShown:false , animation :'slide_from_bottom'}}/>
+      <Stack.Screen
+        name = 'jam'
+        options={{headerShown:false , animation : 'slide_from_right'}}/>
     </Stack>
     </ChallengeProvider>
     </ChatProvider>

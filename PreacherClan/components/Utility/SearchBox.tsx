@@ -1,18 +1,21 @@
 import { View, TextInput, ScrollView, Alert } from "react-native";
 import React, { useEffect, useState } from "react";
 import SearchResult from "./SearchResult";
-import axios from "axios";
+import { apiFetch } from "@/utils/Auth/apiFetch";
+import { useUser } from "@/context/userContext";
 
 export interface SearchResultType {
   _id: string;
   name: string;
-  image: string;
+  profileImage: string;
 }
 
 const SearchBox = () => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultType[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const {logout} = useUser();
 
 
   useEffect(() => {
@@ -29,26 +32,21 @@ const SearchBox = () => {
   }, [query]);
 
 //  api call 
-  const handleSearch = async (searchQuery: string) => {
+ const handleSearch = async (searchQuery: string) => {
     try {
       setLoading(true);
 
-      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-      console.log(backendUrl)
+      const data = await apiFetch(
+  `/search?q=${encodeURIComponent(searchQuery)}&type=gyms`,
+  {},
+  logout
+);
 
-      const response = await axios.get(
-        `${backendUrl}/search`,
-        {
-          params: {
-            q: searchQuery,
-            type: "gyms"
-          }
-        }
-      );
 
-      setResults(response.data.gyms || []);
+
+      setResults(data.gyms || []);
     } catch (error) {
-      console.error(error);
+      console.error("Search error:", error);
       Alert.alert("Something went wrong while searching");
     } finally {
       setLoading(false);
@@ -77,7 +75,7 @@ const SearchBox = () => {
           <SearchResult
             key={item._id}
             name={item.name}
-            image={item.image}
+            image={item.profileImage}
           />
         ))}
 

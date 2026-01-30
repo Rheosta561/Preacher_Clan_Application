@@ -17,14 +17,24 @@ import StackedSwipeCards from "@/components/StackedSwipeCards";
 import CustomToast from "@/components/CustomToast";
 import { useUser } from "@/context/userContext";
 import { transformBackendProfileToUI } from "@/utils/transformProfile";
+import { apiFetch } from "@/utils/Auth/apiFetch";
+
+
 
 import { Profile, RepMateRequest } from "../../../constants/constants";
-import axios from "axios";
+
 import Navbar from "@/components/Utility/Navbar";
 
 const GymBuddyFinderScreen: React.FC = () => {
-  const { user } = useUser();
-  const userId = user?.id;
+  const { user, logout } = useUser();
+const userId = user?.id;
+const PAGE_SIZE = 20;
+
+const [page, setPage] = useState(1);
+const [hasMore, setHasMore] = useState(true);
+const [loadingMore, setLoadingMore] = useState(false);
+
+
 
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
 
@@ -57,34 +67,40 @@ const GymBuddyFinderScreen: React.FC = () => {
     try {
       setLoadingRequests(true);
 
-      const response = await axios.get(
-        `${backendUrl}/requests/${userId}`
-      );
+      const data = await apiFetch<{ requests?: any[] }>(
+  `/requests/${userId}`,
+  {},
+  logout
+);
 
-      if (!response.data?.requests) return;
+      if (!data?.requests) return;
+      const normalized: RepMateRequest[] = data.requests.map((r: any) => {
+  const isReceiver = r.receiver.user._id === userId;
+  const other = isReceiver ? r.sender : r.receiver;
 
-      const normalized: RepMateRequest[] =
-        response.data.requests.map((r: any) => {
-          const isReceiver = r.receiver.user._id === userId;
-          const other = isReceiver ? r.sender : r.receiver;
+  return {
+    id: r._id,
+    status: r.status,
+    direction: isReceiver ? "incoming" : "outgoing",
 
-          return {
-            id: r._id,
-            status: r.status,
-            direction: isReceiver ? "incoming" : "outgoing",
-            profile: {
-              id: other.user._id,
-              name: other.user.name,
-              image:
-                other.profile?.profileImage ||
-                other.profile?.image ||
-                "",
-              isVerified: other.user.isVerified,
-            },
-            gym: other.gym,
-            isTrainer: other.user.isTrainer,
-          };
-        });
+
+    isVerified: other.user.isVerified,
+
+    profile: {
+      id: other.user._id,
+      name: other.user.name,
+      image:
+        other.profile?.profileImage ||
+        other.profile?.image ||
+        "",
+      isVerified: other.user.isVerified, 
+    },
+
+    gym: other.gym,
+    isTrainer: other.user.isTrainer,
+  };
+});
+
 
       setRequests(normalized);
     } catch (err) {
@@ -95,28 +111,39 @@ const GymBuddyFinderScreen: React.FC = () => {
   };
 
 // fetching profiles (blatant)
-  const fetchProfiles = async () => {
-    try {
-      setLoadingProfiles(true);
+const fetchProfiles = async (pageToLoad = 1, append = false) => {
+  if (!userId || loadingMore || (!hasMore && append)) return;
 
-      const response = await axios.get(
-        `${backendUrl}/repmate/${userId}`
-      );
+  try {
+    append ? setLoadingMore(true) : setLoadingProfiles(true);
 
-      if (!response.data?.profiles) return;
+    const data = await apiFetch<{ profiles?: any[] }>(
+      `/repmate/${userId}?page=${pageToLoad}&limit=${PAGE_SIZE}`,
+      {},
+      logout
+    );
 
-      const transformed: Profile[] =
-        response.data.profiles.map((p: any) =>
-          transformBackendProfileToUI(p, handleSendRequest)
-        );
+    if (!data?.profiles) return;
 
-      setProfiles(transformed);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingProfiles(false);
-    }
-  };
+    const transformed: Profile[] = data.profiles.map((p: any) =>
+      transformBackendProfileToUI(p, handleSendRequest)
+    );
+
+    setProfiles(prev =>
+      append ? [...prev, ...transformed] : transformed
+    );
+
+    setHasMore(transformed.length === PAGE_SIZE);
+    setPage(pageToLoad);
+  } catch (err) {
+    console.error("fetchProfiles error", err);
+  } finally {
+    setLoadingProfiles(false);
+    setLoadingMore(false);
+  }
+};
+
+
 
 // initial fetch
   useEffect(() => {
@@ -126,108 +153,144 @@ const GymBuddyFinderScreen: React.FC = () => {
   }, [userId]);
 
 // refreshingg the session
-  const onRefresh = async () => {
-    if (!userId) return;
-    try {
-      setRefreshing(true);
-      await Promise.all([fetchProfiles(), fetchRequests()]);
-    } finally {
-      setRefreshing(false);
-    }
-  };
+const onRefresh = async () => {
+  if (!userId) return;
+
+  try {
+    setRefreshing(true);
+    setIndex(0);
+    setHasMore(true);
+    setPage(1);
+
+    await Promise.all([
+      fetchProfiles(1, false),
+      fetchRequests(),
+    ]);
+  } finally {
+    setRefreshing(false);
+  }
+};
+
 
   const currentProfile = profiles[index];
 
 // send request
-  const handleSendRequest = async () => {
-    console.log(currentProfile);
-    if (!currentProfile) return;
+const handleSendRequest = async () => {
+  if (!currentProfile || !userId) return;
 
-    try {
-      await axios.post(
-        `${backendUrl}/requests/send/${userId}/${currentProfile.id}`
-      );
-
-      console.log('rendering toast');
-
-      setToast({
-        visible: true,
-        type: "success",
-        title: "Request Sent",
-        message: `You liked ${currentProfile.name}`,
-      });
-    } catch (err: any) {
-      setToast({
-        visible: true,
-        type: "error",
-        title: "Failed",
-        message:
-          err?.response?.data?.message ||
-          "Could not send request",
-      });
-    } finally {
-      setIndex((prev) => prev + 1);
-    }
-  };
-
-// reject profile 
-  const handleReject = () => {
-    console.log('current Profile ' , currentProfile)
-    if (!currentProfile) return;
-
-    console.log('setting toast');
+  try {
+    await apiFetch(
+      `/requests/send/${userId}/${currentProfile.id}`,
+      { method: "POST" },
+      logout
+    );
 
     setToast({
       visible: true,
-      type: "info",
-      title: "Skipped",
-      message: `${currentProfile.name} skipped`,
+      type: "success",
+      title: "Request Sent",
+      message: `You liked ${currentProfile.name}`,
     });
+  } catch (err: any) {
+    setToast({
+      visible: true,
+      type: "error",
+      title: "Failed",
+      message: err?.message || "Could not send request",
+    });
+  } finally {
+    setIndex(prev => {
+      const nextIndex = prev + 1;
 
-    setIndex((prev) => prev + 1);
-  };
+      //LOAD NEXT PAGE IF NEEDED
+      if (
+        nextIndex >= profiles.length - 2 &&
+        hasMore &&
+        !loadingMore
+      ) {
+        fetchProfiles(page + 1, true);
+      }
 
-  /* ---------------- ACCEPT / REJECT REQUEST ---------------- */
-  const handleAcceptRequest = async (requestId: string) => {
-    setRequests((prev) => prev.filter((r) => r.id !== requestId));
-
-    try {
-      const response = await axios.post(
-        `${backendUrl}/requests/${userId}/${requestId}`
-      );
+      return nextIndex;
+    });
+  }
+};
 
 
-      console.log('response status while accepting ' , response.status);
-      setToast({
+
+// reject profile 
+  const handleReject = () => {
+  if (!currentProfile) return;
+
+  setToast({
+    visible: true,
+    type: "info",
+    title: "Skipped",
+    message: `${currentProfile.name} skipped`,
+  });
+
+  setIndex(prev => {
+    const nextIndex = prev + 1;
+
+    if (
+      nextIndex >= profiles.length - 2 &&
+      hasMore &&
+      !loadingMore
+    ) {
+      fetchProfiles(page + 1, true);
+    }
+
+    return nextIndex;
+  });
+};
+
+
+// request handler
+const handleAcceptRequest = async (requestId: string) => {
+  setRequests((prev) => prev.filter((r) => r.id !== requestId));
+
+  try {
+    setToast({
       visible: true,
       type: "success",
       title: "Accepted Request",
-      message: ` Hail ${currentProfile.name} `,
+      message: "RepMate bonded ⚔️",
     });
-    } catch (err) {
-      console.error(err);
-      fetchRequests();
-    }
-  };
+    await apiFetch(
+      `/requests/${userId}/${requestId}`,
+      { method: "POST" },
+      logout
+    );
 
-  const handleRejectRequest = async (requestId: string) => {
-    setRequests((prev) => prev.filter((r) => r.id !== requestId));
+    
+  } catch (err) {
+    console.error(err);
+    fetchRequests();
+  }
+};
 
-    try {
-      await axios.post(
-        `${backendUrl}/requests/reject/${userId}/${requestId}`
-      );
-    } catch (err) {
-      console.error(err);
-      fetchRequests();
-    }
-  };
+
+const handleRejectRequest = async (requestId: string) => {
+  setRequests((prev) => prev.filter((r) => r.id !== requestId));
+
+  try {
+    await apiFetch(
+      `/requests/reject/${userId}/${requestId}`,
+      { method: "POST" },
+      logout
+    );
+  } catch (err) {
+    console.error(err);
+    fetchRequests();
+  }
+};
+
 
   const filteredRequests = requests.filter(
     (r) => r.direction === requestTab
   );
 
-  /* ---------------- RENDER ---------------- */
+
   return (
     <View className="flex-1 bg-zinc-950">
       <Navbar/>
@@ -240,12 +303,13 @@ const GymBuddyFinderScreen: React.FC = () => {
             refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor="#fff"
+            progressViewOffset={120}
           />
         }
       >
         {/* HEADER */}
         <View className="mt-24 items-center">
-          <View className="h-32 w-full mt-4 -mb-8">
+          <View className="h-32 w-full mt-8 -mb-14">
             <Image
               source={require("../../../assets/images/repmate.png")}
               style={{ height: 100, width: 100 }}
@@ -335,7 +399,10 @@ const GymBuddyFinderScreen: React.FC = () => {
 
       
 
-      <MatchListener />
+   {requests.some(r => r.direction === "incoming") && (
+  <MatchListener />
+)}
+
 
       </ScrollView> 
       <CustomToast

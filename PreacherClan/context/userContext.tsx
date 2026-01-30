@@ -7,8 +7,10 @@ interface UserContextType {
   loading: boolean
   saveUser: (user: IUser) => Promise<void>
   clearUser: () => Promise<void>
+  updateUser: (data: Partial<IUser>) => Promise<void>
   logout: () => Promise<void>
 }
+
 
 const UserContext = createContext<UserContextType | null>(null)
 
@@ -42,6 +44,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     await AsyncStorage.removeItem('user')
     setUser(null)
   }
+const updateUser = async (data: Partial<IUser>) => {
+  setUser(prev => {
+    if (!prev) return prev
+
+    const updated = { ...prev, ...data }
+     AsyncStorage.setItem('user', JSON.stringify(updated))
+    return updated
+  })
+}
+
 
 
   const logout = async () => {
@@ -57,7 +69,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <UserContext.Provider
-      value={{ user, loading, saveUser, clearUser, logout }}
+      value={{ user, loading, saveUser, clearUser, logout , updateUser }}
     >
       {children}
     </UserContext.Provider>

@@ -16,6 +16,8 @@ import axios from "axios";
 import ProfileCard from "@/components/ProfileCard";
 import GymInfoCard from "@/components/GymComponents/GymInfoCard";
 import { mapUserToProfileCard } from "@/utils/mapUsertoProfile";
+import { useUser } from "@/context/userContext";
+import { apiFetch } from "@/utils/Auth/apiFetch";
 
 export interface UserSearchItem {
   userId: string;
@@ -32,28 +34,31 @@ type SearchItem =
   | ({ type: "user" } & any)
   | ({ type: "gym" } & any);
 
+  const mapBackendGymToUI = (gym: any) => {
+  return {
+    gymId: gym._id,
+    name: gym.name,
+    image:
+      gym.profileImage ||
+      gym.image ||
+      "https://res.cloudinary.com/dzjuyflzw/image/upload/v1/default_gym.jpg",
+    location: gym.location || gym.address?.city || "India",
+    rating: gym.rating ?? 0,
+    featured: gym.featured ?? false,
+    equipments: gym.equipment ?? [],
+    fees: gym.membership?.[0] ?? "—",
+  };
+};
+
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<SearchItem | null>(null);
   const [loading, setLoading] = useState(false);
-
+  const {logout} = useUser();
   const showResults = query.trim().length > 0;
-  const mapUserToUI = (user: any): UserSearchItem => {
-  return {
-    userId: user._id,
-    name: user.name,
-    goals: user.profile?.fitnessGoals ?? [],
-    preferredTime:
-      user.profile?.exerciseGenre?.[0] ??
-      "Flexible",
-    preacherScore : user.preacherScore ,
-    image : user.profile?.profileImage ,
-    type: "user"
-    
-  };
-};
+
 
 
 // delayed search
@@ -71,48 +76,51 @@ export default function SearchScreen() {
   }, [query]);
 
 // backedn call
-  const fetchSearchResults = async (searchQuery: string) => {
-    try {
-      setLoading(true);
-      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+const fetchSearchResults = async (searchQuery: string) => {
+  try {
+    setLoading(true);
 
-      const response = await axios.get(`${backendUrl}/search`, {
-        params: {
-          q: searchQuery,
-          type: "all"
-        }
-      });
+    const data = await apiFetch<{
+      users?: any[];
+      gyms?: any[];
+    }>(
+      `/search?q=${encodeURIComponent(searchQuery)}&type=all`,
+      {},
+      logout 
+    );
+    console.log('users from backedn ' , data.users);
 
-      // console.log(response.data.users)
-
-      const users =
-        response.data.users?.map((u: any) => ({
-          ...u,
-          type: "user",
-          image : u.profile?.profileImage 
-        })) || [];
-
-        // console.log('users from backend \n\n\n' , users);
+    const users =
+      data.users?.map((u: any) => ({
+        ...u,
+        type: "user",
+        image: u.profile?.profileImage,
+      })) || [];
 
 
-        const uiUsers: UserSearchItem[] = users.map(mapUserToUI);
 
-      const gyms =
-        response.data.gyms?.map((g: any) => ({
-          ...g,
-          type: "gym"
-        })) || [];
+    const gyms =
+  data.gyms?.map((g: any) => ({
+    ...mapBackendGymToUI(g),
+    type: "gym",
+  })) || [];
 
-      setResults([...gyms, ...users]);
+      // console.log('gyms , ' , gyms);
 
-      // console.log(results);
-    } catch (error) {
-      console.error(error);
-      Alert.alert("Search failed", "Please try again");
-    } finally {
-      setLoading(false);
+    setResults([...gyms, ...users]);
+  } catch (error: any) {
+    if (error.message === "SESSION_EXPIRED") {
+      // logout already handled
+      return;
     }
-  };
+
+    console.error("Search error:", error);
+    Alert.alert("Search failed", "Please try again");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // console.log('results \n' , results)
 

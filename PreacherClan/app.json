@@ -12,6 +12,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.rheoanubhav.PreacherClan"
     },
+    "notification": {
+      "icon": "./assets/images/repmateKing.png"
+    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -21,9 +24,22 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.rheoanubhav.PreacherClan"
+      "package": "com.rheoanubhav.PreacherClan",
+      "googleServicesFile": "./google-services.json",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "preacherclan.in",
+              "pathPrefix": "/clan"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
-    
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png",
@@ -42,11 +58,26 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "054b67bd-2f95-4a68-8b91-3c6666db24df"
+      }
+    },
+    "owner": "expeetunes"
   }
 }

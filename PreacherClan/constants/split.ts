@@ -15,6 +15,7 @@ export interface ExerciseDetails {
   target_muscles?: string[];
   equipment?: string;
   difficulty?: "Beginner" | "Intermediate" | "Advanced";
+   instructions?: string[];
 }
 export interface WorkoutSplit {
   split_id: string;

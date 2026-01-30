@@ -48,6 +48,7 @@ export interface User {
     count: number
     todayUpdated: boolean
   }
+  onboardingCompleted? : boolean
   partner?: string[]
 }
 

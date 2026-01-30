@@ -17,10 +17,10 @@ const InsightCard: React.FC<Props> = ({ title, insight, footer }) => {
 
       </View>
       
-      <Text className="text-zinc-300 font-ScienceGothic text-sm leading-relaxed">{insight}</Text>
+      <Text className="text-zinc-300 font-ScienceGothic ">{insight}</Text>
 
       {footer && (
-        <Text className="text-zinc-500 text-xs italic mt-3 border-t border-zinc-700 pt-2">
+        <Text className="text-zinc-500 text-xs mt-3 border-t font-ScienceGothic border-zinc-700 pt-2">
           {footer}
         </Text>
       )}

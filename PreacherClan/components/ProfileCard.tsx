@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Image, TouchableOpacity } from "react-native";
-import { CheckCircle } from "lucide-react-native";
+import { CheckCircle, DumbbellIcon } from "lucide-react-native";
 import { MotiView } from "moti";
-import axios, { AxiosError } from "axios";
-import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 
+import { apiFetch } from "@/utils/Auth/apiFetch";
 import { IUser } from "@/constants/constants";
+import { showToast } from "@/utils/showToast";
+
+interface useClan {
+  _id: string;
+  name: string;
+}
 
 interface Profile {
   id: string;
@@ -19,14 +25,16 @@ interface Profile {
   preacherRank?: string;
   isVerified: boolean;
   onSendRequest?: () => void;
-  hideaction? : boolean
-  
-
+  hideaction?: boolean;
+  clan?: useClan;
 }
 
-
-
-type RequestStatus = "idle" | "sent" | "alreadySent" | "error" | "alreadyAccepted";
+type RequestStatus =
+  | "idle"
+  | "sent"
+  | "alreadySent"
+  | "error"
+  | "alreadyAccepted";
 
 const ProfileCard = ({ profile }: { profile: Profile }) => {
   const {
@@ -40,14 +48,13 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
     preacherRank,
     isVerified,
     onSendRequest,
+    clan,
   } = profile;
 
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [requestStatus, setRequestStatus] =
     useState<RequestStatus>("idle");
-
-  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
 
   /* ---------- LOAD USER ---------- */
   useEffect(() => {
@@ -75,41 +82,40 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
     setLoading(true);
 
     try {
-      await axios.post(
-        `${backendUrl}/requests/send/${userId}/${id}`
-      );
+      await apiFetch(`/requests/send/${userId}/${id}`, {
+        method: "POST",
+      });
 
       setRequestStatus("sent");
 
-      Toast.show({
+      showToast({
         type: "success",
-        text1: "Request Sent!",
-        text2: `Your message sails to ${name}'s village.`,
+        title: "Request Sent!",
+        message: `Your message sails to ${name}'s village.`,
       });
-    } catch (err) {
-      const axiosError = err as AxiosError;
+    } catch (err: any) {
+      const status = err?.status || err?.response?.status;
 
-      if (axiosError.response?.status === 400) {
+      if (status === 400) {
         setRequestStatus("alreadySent");
-
-        Toast.show({
+        showToast({
           type: "info",
-          text1: "Already Sent",
-          text2: "You have already sent a request",
+          title: "Already Sent",
+          message: "You have already sent a request",
         });
-      }else if(axiosError.response?.status==401){
-        setRequestStatus('alreadyAccepted');
-        
-      }
-       else {
+      } else if (status === 401) {
+        setRequestStatus("alreadyAccepted");
+        showToast({
+          type: "info",
+          title: "Already RepMate",
+          message: "You are already connected",
+        });
+      } else {
         setRequestStatus("error");
-
-        Toast.show({
+        showToast({
           type: "error",
-          text1: "Request Failed",
-          text2:
-            (axiosError.response?.data as any)?.message ||
-            "Something went wrong",
+          title: "Request Failed",
+          message: err?.message || "Something went wrong",
         });
       }
     } finally {
@@ -127,14 +133,14 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
     loading ||
     requestStatus === "sent" ||
     requestStatus === "alreadySent" ||
-    requestStatus==="alreadyAccepted" ; 
+    requestStatus === "alreadyAccepted";
 
   return (
     <MotiView
       from={{ opacity: 0, translateY: 40 }}
       animate={{ opacity: 1, translateY: 0 }}
       transition={{ duration: 400 }}
-      className="w-full bg-red-600 rounded-lg border border-zinc-800 overflow-hidden"
+      className="w-full bg-red-600 rounded-lg border-2 border-zinc-800 overflow-hidden"
     >
       {/* ---------- IMAGE ---------- */}
       <View className="relative">
@@ -142,6 +148,16 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
           source={{ uri: image }}
           className="w-full h-64"
           resizeMode="cover"
+        />
+
+        {/* 🌑 DARK CINEMATIC OVERLAY (ONLY ADDITION) */}
+        <LinearGradient
+          colors={[
+            "rgba(0,0,0,0.15)",
+            "rgba(0,0,0,0.45)",
+            "rgba(0,0,0,0.8)",
+          ]}
+          className="absolute inset-0"
         />
 
         {isVerified && (
@@ -152,6 +168,13 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
             </Text>
           </View>
         )}
+
+        <View className="absolute bottom-2 right-2 bg-zinc-950 px-2 py-1 rounded-md flex-row items-center">
+          <DumbbellIcon size={14} color="white" />
+          <Text className="ml-1 text-white text-xs font-semibold font-ScienceGothic">
+            {clan?.name ?? "The Preacher Clan"}
+          </Text>
+        </View>
 
         {preacherRank && (
           <View className="absolute top-2 right-2 bg-yellow-500 px-2 py-1 rounded">
@@ -164,7 +187,7 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
 
       {/* ---------- INFO ---------- */}
       <View className="p-4">
-        <Text className="text-lg font-semibold font-bartle  text-black">
+        <Text className="text-lg font-semibold font-bartle text-black">
           {name}, {age}
         </Text>
 
@@ -176,7 +199,7 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
           Preferred Time: {time}
         </Text>
 
-        {/* ---------- TAGS ---------- */}
+        {/* TAGS */}
         <View className="flex-row flex-wrap gap-2 mt-3">
           {tags.map((tag, idx) => (
             <View key={idx} className="bg-zinc-900 px-2 py-1 rounded-md">
@@ -187,39 +210,36 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
           ))}
         </View>
 
-        {/* ---------- ACTION BUTTON ---------- */}
-        {!profile.hideaction &&  <TouchableOpacity
-          disabled={isDisabled}
-          onPress={sendRequestHandler}
-          className={`mt-4 w-full py-2 rounded-md ${
-            isDisabled
-              ? "bg-zinc-50 "
-              : "bg-zinc-950"
-          }`}
-        >
-          <Text
-            className={`text-center text-sm font-ScienceGothic ${
-              isDisabled
-                ? "text-zinc-900"
-                : "text-zinc-50"
+        {/* ACTION BUTTON */}
+        {!profile.hideaction && (
+          <TouchableOpacity
+            disabled={isDisabled}
+            onPress={sendRequestHandler}
+            className={`mt-4 w-full py-2 rounded-md ${
+              isDisabled ? "bg-zinc-50" : "bg-zinc-950"
             }`}
           >
-            {isSelf
-              ? "You"
-              : loading
-              ? "Sending..."
-              : requestStatus === "sent"
-              ? "Sent"
-              : requestStatus === "alreadySent"
-              ? "Already Sent"
-              : requestStatus === "error"
-              ? "Retry"
-              : requestStatus === "alreadyAccepted" 
-              ? "Already A Repmate"
-              : "Send Request"}
-          </Text>
-        </TouchableOpacity> }
-       
+            <Text
+              className={`text-center text-sm font-ScienceGothic ${
+                isDisabled ? "text-zinc-900" : "text-zinc-50"
+              }`}
+            >
+              {isSelf
+                ? "You"
+                : loading
+                ? "Sending..."
+                : requestStatus === "sent"
+                ? "Sent"
+                : requestStatus === "alreadySent"
+                ? "Already Sent"
+                : requestStatus === "error"
+                ? "Retry"
+                : requestStatus === "alreadyAccepted"
+                ? "Already A Repmate"
+                : "Send Request"}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </MotiView>
   );

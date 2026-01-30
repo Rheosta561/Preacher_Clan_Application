@@ -9,10 +9,36 @@ import {
 import { useRouter } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { useState } from 'react'
-import axios from 'axios'
+import { apiFetch } from '@/utils/Auth/apiFetch'
+import * as SecureStore from 'expo-secure-store'
+
 
 import { useUser } from '@/context/userContext'
 import { IUser } from '@/constants/constants'
+import { showToast } from '@/utils/showToast'
+import { socketService } from '@/utils/socket'
+import { Alert } from 'react-native'
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes,
+} from '@react-native-google-signin/google-signin'
+interface SignUpResponse {
+  message: string
+  accessToken: string
+  refreshToken: string
+  user: {
+    _id: string
+    name: string
+    email: string
+    username: string
+    preacherScore?: number
+    partner?: any[]
+    onboardingCompleted ? : boolean 
+  }
+
+}
 
 export default function SignUp() {
   const router = useRouter()
@@ -29,65 +55,131 @@ export default function SignUp() {
 
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL
 
+
+  GoogleSignin.configure({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    offlineAccess: true,     
+    forceCodeForRefreshToken: true,
+  })
+
   const handleGoogleSignup = async () => {
-    await WebBrowser.openBrowserAsync(
-      'https://preacherclan.onrender.com/auth/google'
-    )
+    try {
+        await GoogleSignin.hasPlayServices()
+    
+        const response = await GoogleSignin.signIn()
+    
+        if (!isSuccessResponse(response)) {
+          Alert.alert('Google sign-in cancelled')
+          return
+        }
+    
+        const { idToken, user } = response.data
+    
+        if (!idToken) {
+          throw new Error('Google ID Token not received')
+        }
+    
+        console.log('ID TOKEN:', idToken)
+        console.log('Google user:', user)
+    
+        // Send idToken to backend
+        const res = await apiFetch<SignUpResponse>('/auth/google-auth', {
+          method: 'POST',
+          body: {
+            idToken,
+            mobileUser: true,
+          },
+        })
+    
+        await SecureStore.setItemAsync('accessToken', res.accessToken)
+        await SecureStore.setItemAsync('refreshToken', res.refreshToken)
+    
+        const userData: IUser = {
+          id: res.user._id,
+          name: res.user.name,
+          email: res.user.email,
+          username: res.user.username,
+          preacherScore: res.user.preacherScore ?? 0,
+          partner: res.user.partner ?? [],
+        }
+    
+        await saveUser(userData)
+        showToast({type:"success" , message:"successfully registered " , title:"Welcome to the Clan"})
+        await socketService.connect(userData.id)
+
+        if (!res.user.onboardingCompleted) {
+          router.replace("/(protected)/onboarding");
+        } else {
+          router.replace("/(protected)/(tabs)");
+        }
+      } catch (err: any) {
+        Alert.alert(err.message || 'Google sign-in failed')
+      }
   }
 
-  const handleSignup = async () => {
-    setError(null)
+ const handleSignup = async () => {
+  setError(null)
 
-    if (!name || !email || !username || !password) {
-      setError('All fields are required')
-      return
-    }
+  if (!name || !email || !username || !password) {
+    setError('All fields are required')
+    return
+  }
 
-    try {
-      setLoading(true)
+  try {
+    setLoading(true)
 
-      const response = await axios.post(`${backendUrl}/auth/signup`, {
-        name,
-        email,
-        username,
-        password,
-        mobileUser: true,
-      })
-
-      if (response.status === 201) {
-        const { _id, name, email, username } = response.data.user
-
-        const userData: IUser = {
-          id:_id,
+    const data = await apiFetch<SignUpResponse>(
+      '/auth/signup',
+      {
+        method: 'POST',
+        body: {
           name,
           email,
           username,
-          partner : []
-        }
-
-        await saveUser(userData)
-        router.replace('/(protected)/(tabs)')
+          password,
+          mobileUser: true,
+        },
       }
-    } catch (err: any) {
-      if (axios.isAxiosError(err)) {
-        const status = err.response?.status
-        const message =
-          err.response?.data?.message || 'Signup failed'
+    )
 
-        if (status === 409) {
-          setError('Username or email already taken')
-        } else if (status === 400) {
-          setError('Invalid input. Please check your details.')
-        } else {
-          setError(message)
-        }
-      } else {
-        setError('Something went wrong. Try again.')
-      }
-    } finally {
-      setLoading(false)
+    console.log(data);
+
+    //  Store tokens
+    await SecureStore.setItemAsync('accessToken', data.accessToken)
+    await SecureStore.setItemAsync('refreshToken', data.refreshToken)
+
+    const userData: IUser = {
+      id: data.user._id,
+      name: data.user.name,
+      email: data.user.email,
+      username: data.user.username,
+      preacherScore: data.user.preacherScore ?? 0,
+      partner: data.user.partner ?? [],
+      onboardingCompleted : data.user.onboardingCompleted ?? false 
     }
+
+    await saveUser(userData)
+    showToast({type:"success" , message:"successfully registered " , title:"Welcome to the Clan"})
+
+    if (!data.user.onboardingCompleted) {
+          router.replace("/(protected)/onboarding");
+        } else {
+          router.replace("/(protected)/(tabs)");
+        }
+  } catch (err: any) {
+    if (err.message === 'UNAUTHORIZED') {
+      setError('Session expired. Please try again.')
+    } else if (err.message?.includes('exists')) {
+      setError('Username or email already taken')
+    } else {
+      console.error('Signup error:', err)
+      setError('Signup failed. Please try again.')
+    }
+  } finally {
+    setLoading(false)
   }
+}
+
 
   return (
     <View className="flex-1">
@@ -113,7 +205,7 @@ export default function SignUp() {
             className="flex-row items-center justify-center bg-zinc-900 py-3 rounded-lg mb-4"
           >
             <Image
-              source={{ uri: 'https://www.svgrepo.com/show/475656/google-color.svg' }}
+              source={require('@/assets/images/google.png')}
               className="w-5 h-5 mr-3"
             />
             <Text className="text-zinc-100 text-sm">

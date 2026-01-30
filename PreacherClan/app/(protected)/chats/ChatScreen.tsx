@@ -29,6 +29,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useUser } from "@/context/userContext";
 import { useChat } from "@/context/ChatContext";
 import { socketService } from "@/utils/socket";
+import { apiFetch } from "@/utils/Auth/apiFetch";
 import CustomToast from "@/components/CustomToast";
 
 const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
@@ -101,8 +102,8 @@ type PendingMedia =
 
 export default function ChatScreen() {
   const { id: receiverId } = useLocalSearchParams();
-  const user = useUser();
-  const userId = user.user?.id;
+  const {user ,logout} = useUser();
+  const userId = user?.id;
 
   const { setCurrentChatId } = useChat();
 
@@ -155,11 +156,14 @@ const [remoteTyping, setRemoteTyping] = useState(false);
 
     const init = async () => {
       try {
-        const res = await fetch(`${backendUrl}/chat/${userId}/${receiverId}`, {
-          method: "POST",
-        });
-        const data = await res.json();
-        setChatId(data._id);
+       const data = await apiFetch<{ _id: string }>(
+  `/chat/${userId}/${receiverId}`,
+  { method: "POST" },
+  logout
+);
+
+setChatId(data._id);
+
       } catch (e) {
         console.log("INIT CHAT ERR", e);
       }
@@ -178,39 +182,66 @@ const [remoteTyping, setRemoteTyping] = useState(false);
     if (!chatId) return;
 
     try {
-      const res = await fetch(`${backendUrl}/message/fetch/${chatId}`);
-      const data = await res.json();
+      const data = await apiFetch<any[]>(
+  `/message/fetch/${chatId}`,
+  {},
+  logout
+);
+
+
 
       const parsed: ChatMessage[] = data.map((m: any) => {
-        const media = JSON.parse(m.media || "[]");
+  let media: any[] = [];
 
-        const msg: ChatMessage = {
-          id: m._id,
-          text: m.content,
-          sender: m.sender._id === userId ? "me" : "other",
-          profileImage: m.sender.image ?? "",
-          timestamp: m.createdAt,
-          replyTo: m.replyTo?._id ?? null,
-        };
-        // console.log(msg);
+  try {
+    media = typeof m.media === "string" ? JSON.parse(m.media) : m.media ?? [];
+  } catch {
+    media = [];
+  }
 
-        media.forEach((f: any) => {
-          if (f.type === "image") msg.image = f.url;
-          else if (f.type === "video") msg.video = f.url;
-          else if (f.type === "audio") msg.audio = f.url;
-          else msg.file = f.url;
+  const msg: ChatMessage = {
+    id: m._id,
+    text: m.isDeleted ? "This message was deleted" : m.content,
+    sender: m.sender._id === userId ? "me" : "other",
+    profileImage: m.sender.image ?? "",
+    timestamp: m.createdAt,
+    replyTo: m.replyTo?._id ?? null,
+    isDeleted: m.isDeleted ?? false,
+  };
 
-          msg.fileName = f.fileName ?? f.url?.split("/")?.pop();
-        });
+  media.forEach((f: any) => {
+    if (f.type === "image") msg.image = f.url;
+    else if (f.type === "video") msg.video = f.url;
+    else if (f.type === "audio") msg.audio = f.url;
+    else msg.file = f.url;
 
-        return msg;
-      });
+    msg.fileName = f.fileName ?? f.url?.split("/")?.pop();
+  });
+
+  return msg;
+});
+
 
       setMessages(parsed);
     } catch (e) {
       console.log("FETCH ERROR", e);
     }
   };
+
+  const handleDeleteMessage = async (messageId: string) => {
+  try {
+    await apiFetch(`/message/delete/${messageId}`, {
+      method: "DELETE",
+      body :{
+        userId : userId
+      }
+    },
+  );
+  } catch (e) {
+    console.error("Delete message failed", e);
+  }
+};
+
 
   useEffect(() => {
     (async () => {
@@ -233,6 +264,32 @@ useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
   }
 }, [messages.length]);
+
+
+// deleting message 
+useEffect(() => {
+  const onMessageDeleted = ({ messageId }: { messageId: string }) => {
+    setMessages(prev =>
+      prev.map(m =>
+        m.id === messageId
+          ? {
+              ...m,
+              isDeleted: true,
+              text: "This message was deleted",
+            }
+          : m
+      )
+    );
+  };
+
+  socketService.on("messageDeleted", onMessageDeleted);
+
+  return () => {
+    socketService.off("messageDeleted", onMessageDeleted); 
+  };
+}, []);
+
+
 
 
 
@@ -370,28 +427,30 @@ socketService.emit("typing:stop", { chatId, userId });
 
     try {
       // console.log('replying to ' , replyingTo)
-      const res = await retryingFetch(() =>
-        fetch(`${backendUrl}/message/send`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId,
-            chatId,
-            messageType: "text",
-            content: input,
-            replyTo: replyingTo?.id ?? null,
-          }),
-        })
-      );
+    const data = await retryingFetch(() =>
+  apiFetch<{ _id: string }>(
+    "/message/send",
+    {
+      method: "POST",
+      body: {
+        userId,
+        chatId,
+        messageType: "text",
+        content: input,
+        replyTo: replyingTo?.id ?? null,
+      },
+    },
+    logout
+  )
+);
 
-      const data = await res.json();
+setMessages((prev) =>
+  prev.map((m) =>
+    m.tempId === tempId ? { ...m, id: data._id, status: "sent" } : m
+  )
+);
+
       // console.log(data);
-
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.tempId === tempId ? { ...m, id: data._id, status: "sent" } : m
-        )
-      );
     } catch {
       setMessages((prev) =>
         prev.map((m) =>
@@ -667,6 +726,9 @@ console.log(remoteTyping)
                         : null
                     }
                     onReply={setReplyingTo}
+                    onDelete={()=>{
+                      handleDeleteMessage(msg.id);
+                    }}
                     onScrollTo={(id) => {
 
     const pos = messagePositions.current[id];

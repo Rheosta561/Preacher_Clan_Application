@@ -28,6 +28,7 @@ export interface ChatMessage {
   timestamp: Date | string;
   replyTo?: string | null;
   reaction?: string;
+  isDeleted? : boolean ; 
 }
 
 export interface MessageCardProps {
@@ -109,6 +110,28 @@ export default function MessageCard({
       },
     })
   ).current;
+  if (message.isDeleted) {
+    return (
+      <View className="my-2 px-2 w-full">
+        <View
+          className={`flex flex-row ${
+            isMe ? "justify-end" : "justify-start"
+          }`}
+        >
+          <View
+            className={`px-3 py-2 rounded-lg max-w-[75%] ${
+              isMe ? "bg-zinc-300" : "bg-zinc-800"
+            }`}
+          >
+            <Text className=" text-zinc-500 text-sm font-ScienceGothic italic font-semibold">
+              This message was deleted
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
 
   return (
     <View className="my-2 px-2 w-full ">
@@ -257,15 +280,19 @@ export default function MessageCard({
               <Text className="text-black font-ScienceGothic  text-center text-lg">Reply</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => {
-                onDelete?.(message);
-                setShowMenu(false);
-              }}
-              className="py-2"
-            >
-              <Text className="text-red-600 font-ScienceGothic text-center text-lg">Delete</Text>
-            </TouchableOpacity>
+           {isMe && (
+  <TouchableOpacity
+    onPress={() => {
+      onDelete?.(message);
+      setShowMenu(false);
+    }}
+    className="py-2"
+  >
+    <Text className="text-red-600 font-ScienceGothic text-center text-lg">
+      Delete
+    </Text>
+  </TouchableOpacity>
+)}
 
             <TouchableOpacity
               onPress={() => setShowMenu(false)}

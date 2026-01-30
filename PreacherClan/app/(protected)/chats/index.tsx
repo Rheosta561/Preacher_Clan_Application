@@ -14,17 +14,20 @@ import { Search, Plus } from "lucide-react-native";
 import ChatCard, { ChatCardProps } from "@/components/Chats/ChatCard";
 import { useRouter } from "expo-router";
 import { useUser } from "@/context/userContext";
+import { apiFetch } from "@/utils/Auth/apiFetch";
+import { showToast } from "@/utils/showToast";
 
 export default function ChatScreen() {
-  const user = useUser();
-  const userId = user.user?.id;
+const { user, logout } = useUser();
+const userId = user?.id;
+
   const router = useRouter();
 
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
 
   const [chats, setChats] = useState<ChatCardProps[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);   // 👈 NEW
+  const [refreshing, setRefreshing] = useState(false);   
   const [search, setSearch] = useState("");
   const [searching, setSearching] = useState(false);
 
@@ -33,18 +36,23 @@ export default function ChatScreen() {
   const [friendResults, setFriendResults] = useState<any[]>([]);
   const [friendLoading, setFriendLoading] = useState(false);
 
-  /* -------- FETCH CHATS -------- */
+// fetch chats
   const fetchChats = async () => {
     try {
       if (!refreshing) setLoading(true);   // avoid double loader
 
-      const res = await fetch(`${backendUrl}/chat/getChats`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: { _id: userId } })
-      });
+      const data = await apiFetch<any[]>(
+  "/chat/getChats",
+  {
+    method: "POST",
+    body: { user: { _id: userId } },
+  },
+  logout
+);
 
-      const data = await res.json();
+
+
+
       // console.log('from backend ', data[0].participants);
 
       const mapped: ChatCardProps[] = data.map((chat: any) => {
@@ -52,12 +60,23 @@ export default function ChatScreen() {
           chat.participants.find((p: any) => p._id !== userId) ??
           chat.participants[0];
 
+           let latestMessageText = "No messages yet";
+
+  if (chat.latestMessage) {
+    if (chat.latestMessage.isDeleted) {
+      latestMessageText = "Message deleted";
+    } else if (chat.latestMessage.content?.trim()) {
+      latestMessageText = chat.latestMessage.content;
+    }
+  }
+
 
 
         return {
+          chatId : chat._id ,
           id: other?._id ?? "",
           username: other?.name || other?.username || "Unknown",
-          latestMessage: chat.latestMessage?.content ?? "No messages yet",
+          latestMessage: latestMessageText,
           timestamp: new Date(chat.updatedAt).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit"
@@ -79,6 +98,34 @@ export default function ChatScreen() {
       setRefreshing(false);   // stop refresh 
     }
   };
+
+  const handleDelete = async(chatId : string)=>{
+  try {
+
+    const res = await apiFetch<any>(`/chat/delete/${chatId}`,
+      {
+        method : 'DELETE',
+        body :{
+          userId
+        }
+      }
+    ) ; 
+    console.log(res);
+    if(res.success==true){
+      setChats(prev => prev.filter(chat=> chat.chatId != chatId));
+      showToast({
+        type:'info',
+        title : 'Chat deleted Successfully '
+
+      });
+    }
+    
+  } catch (error) {
+    console.error(error);
+    
+  }
+
+}
 
   useEffect(() => {
     fetchChats();
@@ -102,16 +149,15 @@ export default function ChatScreen() {
     try {
       setSearching(true);
 
-      const res = await fetch(
-        `${backendUrl}/chat/search?q=${encodeURIComponent(query)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user: { _id: userId } })
-        }
-      );
+      const data = await apiFetch<any[]>(
+  `/chat/search?q=${encodeURIComponent(query)}`,
+  {
+    method: "POST",
+    body: { user: { _id: userId } },
+  },
+  logout
+);
 
-      const data = await res.json();
 
       const mapped = data.map((chat: any) => {
         const other =
@@ -120,6 +166,7 @@ export default function ChatScreen() {
 
         return {
           id: other?._id ?? "",
+          chatId : chat.id , 
           username: chat.chatName || other?.username || other?.name || "Unknown",
           latestMessage: chat.latestMessage?.content ?? "No messages yet",
           timestamp: new Date(chat.updatedAt).toLocaleTimeString([], {
@@ -133,6 +180,7 @@ export default function ChatScreen() {
           participants: chat.participants
         };
       });
+
 
       setChats(mapped);
     } finally {
@@ -157,11 +205,12 @@ export default function ChatScreen() {
     try {
       setFriendLoading(true);
 
-      const res = await fetch(
-        `${backendUrl}/search/partner?userId=${userId}&q=${encodeURIComponent(q)}`
-      );
+      const data = await apiFetch<any[]>(
+  `/search/partner?userId=${userId}&q=${encodeURIComponent(q)}`,
+  {},
+  logout
+);
 
-      const data = await res.json();
       setFriendResults(data);
     } finally {
       setFriendLoading(false);
@@ -178,8 +227,9 @@ export default function ChatScreen() {
           value={search}
           onChangeText={setSearch}
           placeholder="Search chats…"
+
           placeholderTextColor="#000"
-          className="flex-1 text-zinc-950"
+          className="flex-1 font-ScienceGothic text-zinc-950"
         />
       </View>
 
@@ -206,7 +256,9 @@ export default function ChatScreen() {
           }
         >
           {chats.map(chat => (
-            <ChatCard key={chat.id} {...chat} onPress={openChat} />
+            <ChatCard key={chat.id} {...chat} onPress={openChat} onDelete={()=>{
+              handleDelete(chat.chatId);
+            }} />
           ))}
         </ScrollView>
       )}

@@ -7,11 +7,14 @@ import { useRouter } from 'expo-router';
 import { useState  , useEffect} from 'react';
 import { IUserWithProfile } from '@/constants/constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNotification } from "@/context/NotificationContext";
+
 import { Image } from 'react-native';
 
 export default function Navbar() {
   const { user } = useUser();
   const router = useRouter();
+  const { unreadCount } = useNotification();
   // console.log("User in Navbar:", user);
   const [profile , setProfile] = useState<IUserWithProfile>();
 
@@ -54,6 +57,10 @@ export default function Navbar() {
     router.push('/(protected)/chats');
   }
 
+  const handleNotificationPress = ()=>{
+    router.push('/(protected)/notification');
+  }
+
   return (
     <View className="absolute z-50 h-40   w-full">
       <View className="absolute  h-36 w-full bg-gradient-to-b bg-[#000000f6] border border-zinc-800 " />
@@ -88,9 +95,33 @@ export default function Navbar() {
       </TouchableOpacity>
 
       {/* Notification Button */}
-      <TouchableOpacity className="p-2 rounded-full">
-        <Bell size={24} color="white" strokeWidth={2} />
-      </TouchableOpacity>
+   <TouchableOpacity
+  className="p-2 rounded-full relative"
+  onPress={handleNotificationPress}
+>
+  <Bell size={24} color="white" strokeWidth={2} />
+
+  {unreadCount > 0 && (
+    <View
+      className="
+        absolute 
+        -top-1 
+        -right-1 
+        bg-zinc-100 
+        min-w-[18px] 
+        h-[18px] rounded-full
+        items-center 
+        justify-center 
+        px-1
+      "
+    >
+      <Text className="text-black text-[10px] font-bold">
+        {unreadCount > 9 ? "9+" : unreadCount}
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
 
     </View>
         

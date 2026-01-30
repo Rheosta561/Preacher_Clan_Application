@@ -13,22 +13,68 @@ import {
 import axios from 'axios'
 
 import { useUser } from '@/context/userContext'
+import { showToast } from '@/utils/showToast'
 import {
   GoogleSignin,
   isErrorWithCode,
   isSuccessResponse,
   statusCodes,
 } from '@react-native-google-signin/google-signin'
-import { IUser } from '@/constants/constants'
 
-/* ---------------- GOOGLE CONFIG ---------------- */
+import { registerForPushNotifications } from '@/utils/registerPush'
+import { IUser } from '@/constants/constants'
+import { apiFetch } from '@/utils/Auth/apiFetch'
+import * as SecureStore from 'expo-secure-store'
+
+interface LoginResponse {
+  message: string
+  accessToken: string
+  refreshToken: string
+  user: {
+    _id: string
+    name: string
+    email: string
+    username: string
+    preacherScore?: number
+    partner?: any[]
+    onboardingCompleted? : boolean 
+  }
+
+}
+
+
+
+
+// google configs 
+
 GoogleSignin.configure({
-  webClientId: '', // add when ready
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  offlineAccess: true,     
+  forceCodeForRefreshToken: true,
 })
 
 export default function Login() {
   const router = useRouter()
   const { user, saveUser } = useUser()
+
+  const savePushTokenToServer = async (userId: string) => {
+  try {
+    const token = await registerForPushNotifications()
+    if (!token) return
+
+    await apiFetch("/auth/push-token", {
+      method: "POST",
+      body: {
+        token,
+        userId,
+      },
+    })
+    console.log('token saved ', token );
+  } catch (err) {
+    console.log("Failed to save push token:", err)
+  }
+}
+
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -45,89 +91,111 @@ export default function Login() {
   }, [user])
 
 // traditional login 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      setError('Email and password are required')
+const handleLogin = async () => {
+  if (!email || !password) {
+    setError('Email and password are required')
+    return
+  }
+
+  try {
+    setLoading(true)
+    setError(null)
+
+    const data = await apiFetch<LoginResponse>(
+      '/auth/login',
+      {
+        method: 'POST',
+        body: {
+          email,
+          password,
+          mobileUser: true,
+        },
+      }
+    )
+
+    await SecureStore.setItemAsync('accessToken', data.accessToken)
+    await SecureStore.setItemAsync('refreshToken', data.refreshToken)
+
+    const userData: IUser = {
+      id: data.user._id,
+      name: data.user.name,
+      email: data.user.email,
+      username: data.user.username,
+      preacherScore: data.user.preacherScore ?? 0,
+      partner: data.user.partner ?? [],
+    }
+
+    await saveUser(userData)
+     showToast({type:"success" , message:"Login Successfull " , title:"Welcome back to the Clan"})
+    await socketService.connect(userData.id)
+    await savePushTokenToServer(userData.id);
+
+    router.replace('/(protected)/(tabs)')
+  } catch (err: any) {
+    setError(err.message || 'Login failed')
+  } finally {
+    setLoading(false)
+  }
+}
+
+
+
+const signIn = async () => {
+  try {
+    await GoogleSignin.hasPlayServices()
+
+    const response = await GoogleSignin.signIn()
+
+    if (!isSuccessResponse(response)) {
+      Alert.alert('Google sign-in cancelled')
       return
     }
 
-    try {
-      setLoading(true)
-      setError(null)
+    const { idToken, user } = response.data
 
-      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL
-      console.log(backendUrl)
+    if (!idToken) {
+      throw new Error('Google ID Token not received')
+    }
 
-      const response = await axios.post(`${backendUrl}/auth/login`, {
-        email,
-        password,
+    console.log('ID TOKEN:', idToken)
+    console.log('Google user:', user)
+
+    // Send idToken to backend
+    const res = await apiFetch<LoginResponse>('/auth/google-auth', {
+      method: 'POST',
+      body: {
+        idToken,
         mobileUser: true,
-      })
-      // console.log(response)
+      },
+    })
 
-      console.log('Login successfull ', response.status === 200  );
+    await SecureStore.setItemAsync('accessToken', res.accessToken)
+    await SecureStore.setItemAsync('refreshToken', res.refreshToken)
 
-      if (response.status === 200) {
-        const { _id, name, email, username } = response.data.user
-
-        const userData: IUser = {
-          id: _id,
-          name,
-          email,
-          username,
-          preacherScore : response.data.user.preacherScore || 0  , 
-          partner: response.data.user.partner || [],
-        }
-
-        await saveUser(userData)
-        await socketService.connect(_id);
-        router.replace('/(protected)/(tabs)')
-      }
-      if(response.status === 401){
-        setError('Incorrect username/email or password.')
-      }
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        setError('Invalid email or password')
-      } else if (err.response?.status === 404) {
-        setError('User not found')
-      } else {
-        console.error('Login error:', err)
-        setError('Something went wrong. Please try again.')
-      }
-    } finally {
-      setLoading(false)
+    const userData: IUser = {
+      id: res.user._id,
+      name: res.user.name,
+      email: res.user.email,
+      username: res.user.username,
+      preacherScore: res.user.preacherScore ?? 0,
+      partner: res.user.partner ?? [],
+      onboardingCompleted : res.user.onboardingCompleted
     }
-  }
 
-// google sign in  to be continued 
-  const signIn = async () => {
-    try {
-      await GoogleSignin.hasPlayServices()
-      const response = await GoogleSignin.signIn()
-
-      if (isSuccessResponse(response)) {
-        console.log('Google user:', response.data)
-      } else {
-        Alert.alert('Sign in cancelled')
-      }
-    } catch (error) {
-      if (isErrorWithCode(error)) {
-        switch (error.code) {
-          case statusCodes.IN_PROGRESS:
-            Alert.alert('Sign in already in progress')
-            break
-          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
-            Alert.alert('Play Services not available')
-            break
-          default:
-            Alert.alert('Google sign-in failed')
-        }
-      } else {
-        Alert.alert('Unknown error occurred')
-      }
+    await saveUser(userData)
+    showToast({type:"success" , message:"successfully registered " , title:"Welcome to the Clan"})
+    await socketService.connect(userData.id)
+    await savePushTokenToServer(userData.id);
+    if (!res.user.onboardingCompleted) {
+      router.replace("/(protected)/onboarding");
+    } else {
+      router.replace("/(protected)/(tabs)");
     }
+  } catch (err: any) {
+    Alert.alert(err.message || 'Google sign-in failed')
   }
+}
+
 
 
   return (
@@ -144,7 +212,7 @@ export default function Login() {
           className="flex-row items-center justify-center bg-zinc-900 py-3 rounded-lg mb-4"
         >
           <Image
-            source={{ uri: 'https://www.svgrepo.com/show/475656/google-color.svg' }}
+            source={require('@/assets/images/google.png')}
             className="w-5 h-5 mr-3"
           />
           <Text className="text-zinc-100 text-sm">

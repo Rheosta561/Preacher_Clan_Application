@@ -34,14 +34,14 @@ const GymCapacity: React.FC<Props> = ({
   }, [capacityPercent]);
 
   return (
-    <View className="bg-[#ff0000] border border-zinc-800 rounded-xl p-4 flex-row justify-between items-center">
+    <View className="bg-red-600 border border-zinc-800 rounded-xl p-4 flex-row justify-between items-center">
       <View>
         <Text className="text-black font-ScienceGothic text-3xl font-semibold uppercase">
           {day}
         </Text>
         <Text className="text-black text-lg font-ScienceGothic">{date}</Text>
         <Text className="text-zinc-900 font-ScienceGothic text-xs mt-1">
-          {preachersCount} preachers working out
+          {preachersCount} preachers trained today
         </Text>
       </View>
 

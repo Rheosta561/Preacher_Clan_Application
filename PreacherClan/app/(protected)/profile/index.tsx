@@ -19,6 +19,41 @@ import RepMateCard from "@/components/Profile_Components/RepmateCard";
 import Shimmer from "@/components/ui/Shimmer";
 import { IUserWithProfile, Repmate_Profile } from "@/constants/constants";
 import { RepMateRequest } from "@/constants/constants";
+import { apiFetch } from "@/utils/Auth/apiFetch";
+import { showToast } from "@/utils/showToast";
+interface removeResponse{
+  message?: string 
+  success?: boolean
+}
+interface BackendProfileResponse {
+  profile: {
+    _id: string
+    about?: string
+    ambition?: string[]
+    fitnessGoals?: string[]
+    exerciseGenre?: string[]
+    timings?: string
+    profileImage?: string
+    coverImage?: string
+
+    userId: {
+      _id: string
+      name: string
+      username: string
+      email: string
+      preacherScore?: number
+      isVerified?: boolean
+      isTrainer?: boolean
+      isAdmin?: boolean
+      streak?: {
+        count: number
+        todayUpdated: boolean
+      }
+      partner?: Repmate_Profile[]
+    }
+  }
+}
+
 
 const DUMMY_REPMATES = [
   {
@@ -38,7 +73,7 @@ const DUMMY_REPMATES = [
 ];
 
 export default function Profile() {
-  const { user, clearUser } = useUser();
+  const { user, clearUser  } = useUser();
   const router = useRouter();
 
   const [profile, setProfile] = useState<IUserWithProfile>();
@@ -52,7 +87,7 @@ export default function Profile() {
 
   // repmates state
 
-  const [repmates , setRepmates]= useState<RepMateRequest[]>([]);
+  const [repmates , setRepmates]= useState<Repmate_Profile[]>([]);
   const [isEditing, setIsEditing] = useState(false);
 
 // image states 
@@ -60,39 +95,76 @@ export default function Profile() {
   const [coverImage, setCoverImage] = useState<any>(null);
 
 // fetching profile from server 
-  const fetchProfileFromAPI = async () => {
-    if (!user?.id) return;
+const fetchProfileFromAPI = async () => {
+      console.log('fetching ');
+  if (!user?.id) return;
 
-    const res = await fetch(
-      `${process.env.EXPO_PUBLIC_BACKEND_URL}/profile/${user.id}`
+  try {
+    const data = await apiFetch<BackendProfileResponse>(
+      `/profile/${user.id}`
     );
 
-    if (res.status === 404) {
-      router.push("/(protected)/onboarding");
+
+    console.log(data);
+
+
+
+
+    const { profile } = data;
+    const { userId } = profile;
+
+   const normalizedProfile: IUserWithProfile = {
+  id: userId._id,
+  name: userId.name,
+  username: userId.username,
+  email: userId.email,
+  preacherScore: userId.preacherScore,
+  isVerified: userId.isVerified,
+  isTrainer: userId.isTrainer,
+  isAdmin: userId.isAdmin,
+  streak: userId.streak,
+
+  profileImage: profile.profileImage,
+  coverImage: profile.coverImage,
+  about: profile.about,
+
+  fitnessGoals: profile.fitnessGoals ?? [],
+  ambition: profile.ambition ?? [],
+  exerciseGenre: profile.exerciseGenre ?? [],
+  timings: profile.timings ?? "",
+
+
+  repmates: userId.partner ?? [],
+};
+
+
+    setProfile(normalizedProfile);
+    setFitnessGoals(normalizedProfile.fitnessGoals ?? []);
+    setExerciseGenre(normalizedProfile.exerciseGenre ?? []);
+    setTimings(normalizedProfile.timings ?? "");
+    setRepmates(normalizedProfile.repmates ?? []);
+
+    await AsyncStorage.setItem(
+      "profile",
+      JSON.stringify(normalizedProfile)
+    );
+  } catch (err: any) {
+    if (err.message === "UNAUTHORIZED") {
+      logout();
       return;
     }
 
-    const data = await res.json();
-    console.log('repmates from backend ' , data.profile.userId.partner);
-    const normalizedProfile: IUserWithProfile = {
-  ...data.profile,
-  repmates: data.profile?.userId?.partner ?? [],
+    if (err?.status === 404) {
+      router.push("/(protected)/onboarding");
+    }
+  }
 };
 
-console.log("normalised profile \n", normalizedProfile.repmates);
-
-    setProfile(normalizedProfile);
-    setFitnessGoals(data.profile.fitnessGoals ?? []);
-    setExerciseGenre(data.profile.exerciseGenre ?? []);
-    setTimings(data.profile.timings ?? "");
-    setRepmates(normalizedProfile.repmates?? []);
-
-    await AsyncStorage.setItem("profile", JSON.stringify(normalizedProfile));
-  };
 
   useEffect(() => {
     const load = async () => {
       const cached = await AsyncStorage.getItem("profile");
+
       if (cached) {
         const parsed = JSON.parse(cached);
         setProfile(parsed);
@@ -144,16 +216,21 @@ console.log("normalised profile \n", normalizedProfile.repmates);
   };
 
 // save changes 
-  const saveChanges = async () => {
+const saveChanges = async () => {
   if (!user?.id) return;
 
   try {
-    setSaving(true) ; // loader start 
+    setSaving(true);
 
     const formData = new FormData();
 
-    if (profileImage) formData.append("profileImage", profileImage as any);
-    if (coverImage) formData.append("coverImage", coverImage as any);
+    if (profileImage) {
+      formData.append("profileImage", profileImage as any);
+    }
+
+    if (coverImage) {
+      formData.append("coverImage", coverImage as any);
+    }
 
     formData.append("fitnessGoals", JSON.stringify(fitnessGoals));
     formData.append("exerciseGenre", JSON.stringify(exerciseGenre));
@@ -161,38 +238,77 @@ console.log("normalised profile \n", normalizedProfile.repmates);
     formData.append("ambition", JSON.stringify(profile?.ambition ?? []));
     formData.append("about", profile?.about ?? "");
 
-    const res = await fetch(
-      `${process.env.EXPO_PUBLIC_BACKEND_URL}/profile/${user.id}`,
+
+    const data = await apiFetch<{ profile: IUserWithProfile }>(
+      `/profile/${user.id}`,
       {
         method: "PUT",
-        body: formData,
-        headers: { "Content-Type": "multipart/form-data" },
-      }
+        body: formData, 
+      },
+      logout 
     );
-
-   
-
-    const data = await res.json();
-    
-
-    console.log('profile update status' , res.status);
 
     setProfile(data.profile);
     setFitnessGoals(data.profile.fitnessGoals ?? []);
     setExerciseGenre(data.profile.exerciseGenre ?? []);
     setTimings(data.profile.timings ?? "");
 
-    await AsyncStorage.setItem("profile", JSON.stringify(data.profile));
+    await AsyncStorage.setItem(
+      "profile",
+      JSON.stringify(data.profile)
+    );
 
     setProfileImage(null);
     setCoverImage(null);
     setIsEditing(false);
-  } catch (err) {
-    console.log("Save failed", err);
+    showToast({type:"success" ,title:"Saved details" , message:"Successfully saved the details"})
+  } catch (err: any) {
+    if (err.message === "SESSION_EXPIRED") {
+      // already logged out by apiFetch
+      showToast({type:"error" , title:"Session expired" , message:"Login once again or restart "})
+      return;
+    }
+
+    console.error("Save failed:", err);
   } finally {
-    setSaving(false);   //stop loader 
+    setSaving(false);
   }
 };
+
+const handleRemoveFriend = async (repmateId: string, repmateName: string) => {
+  if (!user?.id) return;
+
+  try {
+    const data = await apiFetch<removeResponse>(
+      "/repmate/remove",
+      {
+        method: "DELETE", 
+        body: {
+          repmateId,
+          userId: user.id,
+        },
+      }
+    );
+
+    if (data?.success) {
+      setRepmates(prev => prev.filter(m => m._id !== repmateId));
+
+      showToast({
+        type: "info",
+        title: `Removed ${repmateName}`,
+        message: "Successfully removed from repmates",
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    showToast({
+      type: "error",
+      title: "Failed",
+      message: "Could not remove repmate",
+    });
+  }
+};
+
 
 
   // logut 
@@ -297,6 +413,8 @@ repmates && repmates.length>0
             setTimings(t);
             setIsEditing(true);
           }}
+
+          timings={timings}
           onEditStart={() => setIsEditing(true)}
         />
 
@@ -312,6 +430,7 @@ repmates && repmates.length>0
             profileImage={mate.profile?.profileImage}
             _id={mate._id}
             preacherScore={mate.preacherScore}
+            onRemove={() => handleRemoveFriend(mate._id, mate.name)}
           />
         ))}
       </View>
