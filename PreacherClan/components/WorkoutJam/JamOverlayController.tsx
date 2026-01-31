@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
-import { View, Text } from "react-native";
-import { MotiView } from "moti";
 import { useRouter } from "expo-router";
+import { MotiView } from "moti";
+import React, { useEffect, useRef, useState } from "react";
+import { Text, View } from "react-native";
 
-import { socketService } from "@/utils/socket";
 import ExerciseDoneModal from "@/components/WorkoutJam/ExerciseDoneModal";
+import { socketService } from "@/utils/socket";
 
 /* ================= TYPES ================= */
 
@@ -54,7 +54,7 @@ export default function JamOverlayController({
     if (timerRef.current) clearInterval(timerRef.current);
 
     timerRef.current = setInterval(() => {
-      setCountdown(prev => {
+      setCountdown((prev) => {
         if (prev === 1) {
           if (timerRef.current) clearInterval(timerRef.current);
           timerRef.current = null;
@@ -82,8 +82,8 @@ export default function JamOverlayController({
     };
 
     const onUserCompleted = ({ userId }: { userId: string }) => {
-      setCompletedUsers(prev =>
-        prev.includes(userId) ? prev : [...prev, userId]
+      setCompletedUsers((prev) =>
+        prev.includes(userId) ? prev : [...prev, userId],
       );
     };
 
@@ -123,7 +123,7 @@ export default function JamOverlayController({
     if (phase === "completed") {
       const t = setTimeout(() => {
         setPhase("idle");
-        router.replace("/(protected)/(tabs)");
+        router.replace("/protected/tabs");
       }, 5000);
 
       return () => clearTimeout(t);
@@ -136,7 +136,6 @@ export default function JamOverlayController({
 
   return (
     <View className="absolute inset-0 z-50">
-
       {/* ===== COUNTDOWN ===== */}
       {phase === "countdown" && (
         <View className="flex-1 bg-black items-center justify-center">
@@ -190,7 +189,7 @@ export default function JamOverlayController({
       {phase === "completed" && (
         <View className="flex-1 bg-black w-full flex-col  items-center justify-center">
           <Text className="text-white text-4xl text-center w-full font-bartle mb-3">
-            JAM COMPLETED 
+            JAM COMPLETED
           </Text>
 
           <Text className="text-green-400 text-xl font-ScienceGothic mb-1">

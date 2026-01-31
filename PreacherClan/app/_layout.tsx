@@ -1,33 +1,33 @@
-import 'react-native-reanimated'
+import { enableScreens } from "react-native-screens";
+enableScreens(true);
+import "react-native-reanimated";
 
-import { DarkTheme, ThemeProvider } from '@react-navigation/native'
-import { Stack } from 'expo-router'
-import { StatusBar } from 'expo-status-bar'
-import { useFonts } from 'expo-font'
-import * as SplashScreen from 'expo-splash-screen'
-import { useEffect } from 'react'
-import { View } from 'react-native'
 
-import '../global.css'
-import { useColorScheme } from '@/hooks/use-color-scheme'
-import { UserProvider } from '@/context/userContext'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
-import { useToast } from '@/context/ToastContext'
-import { ToastProvider } from '@/context/ToastContext'
-import { registerToast } from '@/utils/showToast'
-import { useNetworkWatcher } from '@/hooks/useNetworkWatcher'
-import * as Notifications from "expo-notifications"
-import { Platform } from 'react-native'
 
-import { Buffer } from "buffer"
-import { registerForPushNotifications } from '@/utils/registerPush'
-import { usePushNotifications } from '@/hooks/usePushNotifications'
-import { useLazyLocation } from "@/hooks/useLazyLocation"
-import LocationBootstrap from '@/components/LocationBootStrap'
-import { NotificationProvider } from '@/context/NotificationContext'
+import { DarkTheme, ThemeProvider } from "@react-navigation/native";
+import { useFonts } from "expo-font";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import { View, Platform } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-global.Buffer = Buffer
+import { UserProvider } from "@/context/userContext";
+import { ToastProvider, useToast } from "@/context/ToastContext";
+import { NotificationProvider } from "@/context/NotificationContext";
+import { registerToast } from "@/utils/showToast";
+
+import * as Notifications from "expo-notifications";
+import { Buffer } from "buffer";
+
+import "../global.css";
+
+global.Buffer = Buffer;
+
+SplashScreen.preventAutoHideAsync();
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -36,81 +36,54 @@ Notifications.setNotificationHandler({
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
-})
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-}
-
-SplashScreen.preventAutoHideAsync()
+});
 
 function ToastRegister() {
-  const { showToast } = useToast()
+  const { showToast } = useToast();
 
   useEffect(() => {
-    registerToast(showToast)
-  }, [])
+    registerToast(showToast);
+  }, [showToast]);
 
-  return null
+  return null;
 }
 
-
-
 export default function RootLayout() {
-  const colorScheme = useColorScheme()
-  usePushNotifications();
-
-
   const [fontsLoaded] = useFonts({
-    'BBH-Bartle': require('../assets/images/fonts/BBHBartle-Regular.ttf'),
-    'ScienceGothic': require('../assets/images/fonts/ScienceGothic-VariableFont_CTRS,slnt,wdth,wght.ttf'),
-  })
+    "BBH-Bartle": require("../assets/images/fonts/BBHBartle-Regular.ttf"),
+    ScienceGothic: require("../assets/images/fonts/ScienceGothic-VariableFont_CTRS,slnt,wdth,wght.ttf"),
+  });
 
   useEffect(() => {
     if (fontsLoaded) {
-      SplashScreen.hideAsync()
+      SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded])
+  }, [fontsLoaded]);
 
-  useEffect(() => {
-    registerForPushNotifications();
-  
-    
-  }, [])
-  
-
-  if (!fontsLoaded) return null
+ 
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: "#09090b" }} />;
+  }
 
   return (
-    <ThemeProvider value={DarkTheme}>
-      <UserProvider>
-      <ToastProvider>
-        <ToastRegister />
-        <NotificationProvider>
-        <NetworkWatcher />
-        <LocationBootstrap/>
-
-      
-          <GestureHandlerRootView className="flex-1">
-            <View className="flex-1 bg-zinc-950">
-
-              <Stack>
-                <Stack.Screen name="(promo)" options={{ headerShown: false }} />
-                <Stack.Screen name="(protected)" options={{ headerShown: false }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              </Stack>
-
-              <StatusBar style="light" />
-            </View>
-          </GestureHandlerRootView>
-       </NotificationProvider>
-      </ToastProvider>
-       </UserProvider>
-    </ThemeProvider>
-  )
-}
-
-function NetworkWatcher() {
-  useNetworkWatcher()
-  return null
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={DarkTheme}>
+        <UserProvider>
+          <ToastProvider>
+            <ToastRegister />
+            <NotificationProvider>
+              <View style={{ flex: 1, backgroundColor: "#09090b" }}>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="promo" />
+                  <Stack.Screen name="auth" />
+                  <Stack.Screen name="protected" />
+                </Stack>
+                <StatusBar style="light" />
+              </View>
+            </NotificationProvider>
+          </ToastProvider>
+        </UserProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
+  );
 }

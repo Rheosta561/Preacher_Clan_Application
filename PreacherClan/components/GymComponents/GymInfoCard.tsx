@@ -1,8 +1,8 @@
-import React from "react";
-import { View, Text, Image, TouchableOpacity } from "react-native";
-import { Dumbbell, Wallet2, MapPin, Star } from "lucide-react-native";
-import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { Dumbbell, MapPin, Star, Wallet2 } from "lucide-react-native";
+import React from "react";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 type Gym = {
   name: string;
@@ -45,7 +45,7 @@ export default function GymInfoCard({ gym }: { gym: Gym }) {
 
   const handleClick = () => {
     router.push({
-      pathname: "/(protected)/clan",
+      pathname: "/protected/clan",
       params: {
         id: gymId,
         name: name,
@@ -65,11 +65,7 @@ export default function GymInfoCard({ gym }: { gym: Gym }) {
 
         {/* 🌑 DARK CINEMATIC OVERLAY (ONLY ADDITION) */}
         <LinearGradient
-          colors={[
-            "rgba(0,0,0,0.15)",
-            "rgba(0,0,0,0.45)",
-            "rgba(0,0,0,0.8)",
-          ]}
+          colors={["rgba(0,0,0,0.15)", "rgba(0,0,0,0.45)", "rgba(0,0,0,0.8)"]}
           className="absolute inset-0"
         />
 
@@ -100,9 +96,7 @@ export default function GymInfoCard({ gym }: { gym: Gym }) {
 
       {/* DETAILS */}
       <View className="p-5">
-        <Text className="text-lg font-bartle text-black mb-4">
-          {name}
-        </Text>
+        <Text className="text-lg font-bartle text-black mb-4">{name}</Text>
 
         <View className="mb-5">
           {/* Equipment */}
@@ -111,10 +105,7 @@ export default function GymInfoCard({ gym }: { gym: Gym }) {
 
             <View className="flex flex-row flex-wrap w-5/6 gap-2">
               {equipments.map((item, index) => (
-                <View
-                  key={index}
-                  className="bg-zinc-950 px-2 py-1 rounded"
-                >
+                <View key={index} className="bg-zinc-950 px-2 py-1 rounded">
                   <Text className="text-zinc-200 text-xs font-ScienceGothic">
                     {item}
                   </Text>
@@ -128,9 +119,7 @@ export default function GymInfoCard({ gym }: { gym: Gym }) {
             <Wallet2 size={20} color="#000000" />
             <Text className="text-zinc-950 font-ScienceGothic">
               Monthly Fee:{" "}
-              <Text className="text-black font-medium">
-                ₹{fees?.monthly}
-              </Text>
+              <Text className="text-black font-medium">₹{fees?.monthly}</Text>
             </Text>
           </View>
 
@@ -139,9 +128,7 @@ export default function GymInfoCard({ gym }: { gym: Gym }) {
             <Star size={18} color="#000000" fill="#facc15" />
             <Text className="text-zinc-950 font-ScienceGothic">
               Rating:{" "}
-              <Text className="text-black font-medium">
-                {rating} / 5
-              </Text>
+              <Text className="text-black font-medium">{rating} / 5</Text>
             </Text>
           </View>
         </View>

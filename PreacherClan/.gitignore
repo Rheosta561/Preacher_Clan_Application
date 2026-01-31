@@ -3,7 +3,7 @@
 # dependencies
 node_modules/
 # Firebase / Google credentials
-google-services.json
+# google-services.json
 preacherclan-bafc6-firebase-adminsdk-fbsvc-99844126ca.json
 
 # Firebase Admin SDK (generic)

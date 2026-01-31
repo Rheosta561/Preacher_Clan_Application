@@ -7,7 +7,8 @@ type ApiFetchOptions = {
   headers?: Record<string, string>;
 };
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "https://preacherclan.onrender.com";
+
 
 export async function apiFetch<T = any>(
   endpoint: string,
@@ -33,6 +34,7 @@ export async function apiFetch<T = any>(
     if (accessToken) {
       finalHeaders.Authorization = `Bearer ${accessToken}`;
     }
+    console.log(API_BASE_URL);
 
     return fetch(`${API_BASE_URL}${endpoint}`, {
       method,

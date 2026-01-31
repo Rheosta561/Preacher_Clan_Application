@@ -77,8 +77,7 @@
       "router": {},
       "eas": {
         "projectId": "054b67bd-2f95-4a68-8b91-3c6666db24df"
-      },
-       "googleWebClientId": "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID"
+      }
     },
     "owner": "expeetunes"
   }

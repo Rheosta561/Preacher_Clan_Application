@@ -1,25 +1,24 @@
+import { BarcodeScanningResult, Camera, CameraView } from "expo-camera";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { CameraView, BarcodeScanningResult, Camera } from "expo-camera";
-import { useRouter, useLocalSearchParams } from "expo-router";
 
-import { apiFetch } from "@/utils/Auth/apiFetch";
-import { useUser } from "@/context/userContext";
-import JoinClanCard from "@/components/GymComponents/JoinClanCard";
-import GymReviews from "@/components/GymComponents/GymReviews";
-import GymGallery from "@/components/GymComponents/Gallery";
 import AddReviewModal from "@/components/GymComponents/AddReviewModal";
+import GymGallery from "@/components/GymComponents/Gallery";
+import GymReviews from "@/components/GymComponents/GymReviews";
+import JoinClanCard from "@/components/GymComponents/JoinClanCard";
+import { useUser } from "@/context/userContext";
+import { apiFetch } from "@/utils/Auth/apiFetch";
 
-import { showToast } from "@/utils/showToast";
 import OtpInput from "@/components/GymComponents/OtpInput";
+import { showToast } from "@/utils/showToast";
 
 /* ================= MOCK TOGGLE ================= */
 const USE_MOCK = true;
@@ -86,58 +85,53 @@ export default function JoinClanScreen() {
 
   const [showReviewModal, setShowReviewModal] = useState(false);
 
+  //   pagination for reviews
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewCursor, setReviewCursor] = useState<string | null>(null);
+  const [hasMoreReviews, setHasMoreReviews] = useState(true);
+  const [loadingMoreReviews, setLoadingMoreReviews] = useState(false);
+  const REVIEWS_PAGE_SIZE = 2;
 
-//   pagination for reviews
-const [reviews, setReviews] = useState<any[]>([]);
-const [reviewCursor, setReviewCursor] = useState<string | null>(null);
-const [hasMoreReviews, setHasMoreReviews] = useState(true);
-const [loadingMoreReviews, setLoadingMoreReviews] = useState(false);
-const REVIEWS_PAGE_SIZE = 2 ; 
-
-
-// fetching reviews 
-useEffect(() => {
-  if (USE_MOCK) {
-    const firstPage = mockReviews.slice(0, REVIEWS_PAGE_SIZE);
-    setReviews(firstPage);
-    setReviewCursor(firstPage[firstPage.length - 1]?._id ?? null);
-    setHasMoreReviews(mockReviews.length > REVIEWS_PAGE_SIZE);
-  }
-}, []);
-
-
-const fetchMoreReviews = async () => {
-  if (loadingMoreReviews || !hasMoreReviews) return;
-
-  try {
-    setLoadingMoreReviews(true);
-
+  // fetching reviews
+  useEffect(() => {
     if (USE_MOCK) {
-      // simulate cursor pagination
-      const startIndex = mockReviews.findIndex(
-        (r) => r._id === reviewCursor
-      );
-
-      const nextPage = mockReviews.slice(
-        startIndex + 1,
-        startIndex + 1 + REVIEWS_PAGE_SIZE
-      );
-
-      if (nextPage.length === 0) {
-        setHasMoreReviews(false);
-        return;
-      }
-
-      setReviews((prev) => [...prev, ...nextPage]);
-      setReviewCursor(nextPage[nextPage.length - 1]._id);
-
-      if (startIndex + 1 + REVIEWS_PAGE_SIZE >= mockReviews.length) {
-        setHasMoreReviews(false);
-      }
+      const firstPage = mockReviews.slice(0, REVIEWS_PAGE_SIZE);
+      setReviews(firstPage);
+      setReviewCursor(firstPage[firstPage.length - 1]?._id ?? null);
+      setHasMoreReviews(mockReviews.length > REVIEWS_PAGE_SIZE);
     }
+  }, []);
 
-    // 🔮 FUTURE REAL API
-    /*
+  const fetchMoreReviews = async () => {
+    if (loadingMoreReviews || !hasMoreReviews) return;
+
+    try {
+      setLoadingMoreReviews(true);
+
+      if (USE_MOCK) {
+        // simulate cursor pagination
+        const startIndex = mockReviews.findIndex((r) => r._id === reviewCursor);
+
+        const nextPage = mockReviews.slice(
+          startIndex + 1,
+          startIndex + 1 + REVIEWS_PAGE_SIZE,
+        );
+
+        if (nextPage.length === 0) {
+          setHasMoreReviews(false);
+          return;
+        }
+
+        setReviews((prev) => [...prev, ...nextPage]);
+        setReviewCursor(nextPage[nextPage.length - 1]._id);
+
+        if (startIndex + 1 + REVIEWS_PAGE_SIZE >= mockReviews.length) {
+          setHasMoreReviews(false);
+        }
+      }
+
+      // 🔮 FUTURE REAL API
+      /*
     const data = await apiFetch(
       `/review/gym/${gym._id}?cursor=${reviewCursor}&limit=5`,
       {},
@@ -148,26 +142,18 @@ const fetchMoreReviews = async () => {
     setReviewCursor(data.nextCursor);
     setHasMoreReviews(data.hasMore);
     */
-  } finally {
-    setLoadingMoreReviews(false);
-  }
-};
-
-
-
+    } finally {
+      setLoadingMoreReviews(false);
+    }
+  };
 
   /* ================= FETCH GYM ================= */
-
 
   useEffect(() => {
     const fetchGym = async () => {
       try {
         setFetchingGym(true);
-        const data = await apiFetch<{ gym: any }>(
-          `/gym/gym/${id}`,
-          {},
-          logout
-        );
+        const data = await apiFetch<{ gym: any }>(`/gym/gym/${id}`, {}, logout);
         setGym(data.gym || data);
       } catch {
         Alert.alert("Gym not found");
@@ -199,11 +185,7 @@ const fetchMoreReviews = async () => {
 
     try {
       setJoining(true);
-      await apiFetch(
-        `/join/${code}/${user?.id}`,
-        { method: "GET" },
-        logout
-      );
+      await apiFetch(`/join/${code}/${user?.id}`, { method: "GET" }, logout);
 
       showToast({
         type: "success",
@@ -211,14 +193,14 @@ const fetchMoreReviews = async () => {
         message: "Successfully joined the Gym",
       });
 
-      router.replace("/(protected)/(tabs)");
+      router.replace("/protected/tabs");
     } catch (err: any) {
-        showToast({
-            type:"error",
-            title:"Failed Joining the Gym",
-            message: err.message
-        })
-    //   Alert.alert("Join Failed", err.message || "Invalid clan code");
+      showToast({
+        type: "error",
+        title: "Failed Joining the Gym",
+        message: err.message,
+      });
+      //   Alert.alert("Join Failed", err.message || "Invalid clan code");
     } finally {
       setJoining(false);
     }
@@ -243,7 +225,7 @@ const fetchMoreReviews = async () => {
       await apiFetch(
         `/review/${gym._id}`,
         { method: "POST", body: { rating, review } },
-        logout
+        logout,
       );
 
       showToast({ type: "success", title: "Review Added" });
@@ -269,8 +251,6 @@ const fetchMoreReviews = async () => {
   return (
     <>
       <ScrollView className="flex-1 bg-zinc-950 px-4 pt-4">
-        
-
         <Text className="text-zinc-400 text-sm mb-4 font-ScienceGothic">
           Join this gym and become a Preacher
         </Text>
@@ -280,23 +260,16 @@ const fetchMoreReviews = async () => {
           <JoinClanCard gym={gym} />
         </View>
 
-  
-
         {/* GALLERY */}
         <View className="mt-4">
-          <GymGallery
-            images={USE_MOCK ? mockGallery : gym?.gallery ?? []}
-          />
+          <GymGallery images={USE_MOCK ? mockGallery : (gym?.gallery ?? [])} />
         </View>
 
         {/* JOIN CODE */}
         <Text className="text-zinc-300 mt-6  font-ScienceGothic">
           Enter 6-digit Clan Code
         </Text>
-        <OtpInput
-            value={manualCode}
-            onChange={setManualCode}
-            />
+        <OtpInput value={manualCode} onChange={setManualCode} />
 
         <TouchableOpacity
           disabled={joining}
@@ -316,12 +289,12 @@ const fetchMoreReviews = async () => {
 
         {/* 📷 QR */}
         <View className="flex-row items-center my-6">
-  <View className="flex-1 h-[1px] bg-zinc-700" />
-  <Text className="mx-3 text-zinc-400 font-ScienceGothic text-sm">
-    OR
-  </Text>
-  <View className="flex-1 h-[1px] bg-zinc-700" />
-</View>
+          <View className="flex-1 h-[1px] bg-zinc-700" />
+          <Text className="mx-3 text-zinc-400 font-ScienceGothic text-sm">
+            OR
+          </Text>
+          <View className="flex-1 h-[1px] bg-zinc-700" />
+        </View>
         <TouchableOpacity
           onPress={() => setScanning((p) => !p)}
           className={` py-3 rounded-lg ${
@@ -351,22 +324,20 @@ const fetchMoreReviews = async () => {
 
           <GymReviews reviews={reviews} />
           {hasMoreReviews && (
-  <TouchableOpacity
-    onPress={fetchMoreReviews}
-    disabled={loadingMoreReviews}
-    className="mt-3 bg-zinc-800 py-2 rounded-lg"
-  >
-    {loadingMoreReviews ? (
-      <ActivityIndicator color="#fff" />
-    ) : (
-      <Text className="text-center text-white font-ScienceGothic">
-        Load more reviews
-      </Text>
-    )}
-  </TouchableOpacity>
-)}
-
-
+            <TouchableOpacity
+              onPress={fetchMoreReviews}
+              disabled={loadingMoreReviews}
+              className="mt-3 bg-zinc-800 py-2 rounded-lg"
+            >
+              {loadingMoreReviews ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text className="text-center text-white font-ScienceGothic">
+                  Load more reviews
+                </Text>
+              )}
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             onPress={() => setShowReviewModal(true)}
@@ -376,7 +347,6 @@ const fetchMoreReviews = async () => {
               Add Review
             </Text>
           </TouchableOpacity>
-
         </View>
 
         <View className="h-24" />

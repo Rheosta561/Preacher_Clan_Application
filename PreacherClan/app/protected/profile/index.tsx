@@ -1,59 +1,57 @@
-import {
-  View,
-  Text,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-} from "react-native";
-import { useEffect, useState, useCallback } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import {
+    Image,
+    RefreshControl,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
-import { useUser } from "@/context/userContext";
 import MileStoneCard from "@/components/Profile_Components/MileStoneCard";
-import UserGoalCard from "@/components/Profile_Components/UserGoalCard";
 import RepMateCard from "@/components/Profile_Components/RepmateCard";
+import UserGoalCard from "@/components/Profile_Components/UserGoalCard";
 import Shimmer from "@/components/ui/Shimmer";
 import { IUserWithProfile, Repmate_Profile } from "@/constants/constants";
-import { RepMateRequest } from "@/constants/constants";
+import { useUser } from "@/context/userContext";
 import { apiFetch } from "@/utils/Auth/apiFetch";
 import { showToast } from "@/utils/showToast";
-interface removeResponse{
-  message?: string 
-  success?: boolean
+interface removeResponse {
+  message?: string;
+  success?: boolean;
 }
 interface BackendProfileResponse {
   profile: {
-    _id: string
-    about?: string
-    ambition?: string[]
-    fitnessGoals?: string[]
-    exerciseGenre?: string[]
-    timings?: string
-    profileImage?: string
-    coverImage?: string
+    _id: string;
+    about?: string;
+    ambition?: string[];
+    fitnessGoals?: string[];
+    exerciseGenre?: string[];
+    timings?: string;
+    profileImage?: string;
+    coverImage?: string;
 
     userId: {
-      _id: string
-      name: string
-      username: string
-      email: string
-      preacherScore?: number
-      isVerified?: boolean
-      isTrainer?: boolean
-      isAdmin?: boolean
+      _id: string;
+      name: string;
+      username: string;
+      email: string;
+      preacherScore?: number;
+      isVerified?: boolean;
+      isTrainer?: boolean;
+      isAdmin?: boolean;
       streak?: {
-        count: number
-        todayUpdated: boolean
-      }
-      partner?: Repmate_Profile[]
-    }
-  }
+        count: number;
+        todayUpdated: boolean;
+      };
+      partner?: Repmate_Profile[];
+    };
+  };
 }
-
 
 const DUMMY_REPMATES = [
   {
@@ -73,7 +71,7 @@ const DUMMY_REPMATES = [
 ];
 
 export default function Profile() {
-  const { user, clearUser  } = useUser();
+  const { user, clearUser } = useUser();
   const router = useRouter();
 
   const [profile, setProfile] = useState<IUserWithProfile>();
@@ -87,79 +85,69 @@ export default function Profile() {
 
   // repmates state
 
-  const [repmates , setRepmates]= useState<Repmate_Profile[]>([]);
+  const [repmates, setRepmates] = useState<Repmate_Profile[]>([]);
   const [isEditing, setIsEditing] = useState(false);
 
-// image states 
+  // image states
   const [profileImage, setProfileImage] = useState<any>(null);
   const [coverImage, setCoverImage] = useState<any>(null);
 
-// fetching profile from server 
-const fetchProfileFromAPI = async () => {
-      console.log('fetching ');
-  if (!user?.id) return;
+  // fetching profile from server
+  const fetchProfileFromAPI = async () => {
+    console.log("fetching ");
+    if (!user?.id) return;
 
-  try {
-    const data = await apiFetch<BackendProfileResponse>(
-      `/profile/${user.id}`
-    );
+    try {
+      const data = await apiFetch<BackendProfileResponse>(
+        `/profile/${user.id}`,
+      );
 
+      console.log(data);
 
-    console.log(data);
+      const { profile } = data;
+      const { userId } = profile;
 
+      const normalizedProfile: IUserWithProfile = {
+        id: userId._id,
+        name: userId.name,
+        username: userId.username,
+        email: userId.email,
+        preacherScore: userId.preacherScore,
+        isVerified: userId.isVerified,
+        isTrainer: userId.isTrainer,
+        isAdmin: userId.isAdmin,
+        streak: userId.streak,
 
+        profileImage: profile.profileImage,
+        coverImage: profile.coverImage,
+        about: profile.about,
 
+        fitnessGoals: profile.fitnessGoals ?? [],
+        ambition: profile.ambition ?? [],
+        exerciseGenre: profile.exerciseGenre ?? [],
+        timings: profile.timings ?? "",
 
-    const { profile } = data;
-    const { userId } = profile;
+        repmates: userId.partner ?? [],
+      };
 
-   const normalizedProfile: IUserWithProfile = {
-  id: userId._id,
-  name: userId.name,
-  username: userId.username,
-  email: userId.email,
-  preacherScore: userId.preacherScore,
-  isVerified: userId.isVerified,
-  isTrainer: userId.isTrainer,
-  isAdmin: userId.isAdmin,
-  streak: userId.streak,
+      setProfile(normalizedProfile);
+      setFitnessGoals(normalizedProfile.fitnessGoals ?? []);
+      setExerciseGenre(normalizedProfile.exerciseGenre ?? []);
+      setTimings(normalizedProfile.timings ?? "");
+      setRepmates(normalizedProfile.repmates ?? []);
 
-  profileImage: profile.profileImage,
-  coverImage: profile.coverImage,
-  about: profile.about,
+      await AsyncStorage.setItem("profile", JSON.stringify(normalizedProfile));
+    } catch (err: any) {
+      if (err.message === "UNAUTHORIZED") {
+        logout();
+        return;
+      }
 
-  fitnessGoals: profile.fitnessGoals ?? [],
-  ambition: profile.ambition ?? [],
-  exerciseGenre: profile.exerciseGenre ?? [],
-  timings: profile.timings ?? "",
-
-
-  repmates: userId.partner ?? [],
-};
-
-
-    setProfile(normalizedProfile);
-    setFitnessGoals(normalizedProfile.fitnessGoals ?? []);
-    setExerciseGenre(normalizedProfile.exerciseGenre ?? []);
-    setTimings(normalizedProfile.timings ?? "");
-    setRepmates(normalizedProfile.repmates ?? []);
-
-    await AsyncStorage.setItem(
-      "profile",
-      JSON.stringify(normalizedProfile)
-    );
-  } catch (err: any) {
-    if (err.message === "UNAUTHORIZED") {
-      logout();
-      return;
+      if (err?.status === 404) {
+        router.push("/protected/onboarding");
+      }
     }
-
-    if (err?.status === 404) {
-      router.push("/(protected)/onboarding");
-    }
-  }
-};
-
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -188,10 +176,9 @@ const fetchProfileFromAPI = async () => {
     }
   }, []);
 
-// image picker 
+  // image picker
   const pickImage = async (type: "profile" | "cover") => {
-    const permission =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -215,109 +202,108 @@ const fetchProfileFromAPI = async () => {
     setIsEditing(true);
   };
 
-// save changes 
-const saveChanges = async () => {
-  if (!user?.id) return;
+  // save changes
+  const saveChanges = async () => {
+    if (!user?.id) return;
 
-  try {
-    setSaving(true);
+    try {
+      setSaving(true);
 
-    const formData = new FormData();
+      const formData = new FormData();
 
-    if (profileImage) {
-      formData.append("profileImage", profileImage as any);
+      if (profileImage) {
+        formData.append("profileImage", profileImage as any);
+      }
+
+      if (coverImage) {
+        formData.append("coverImage", coverImage as any);
+      }
+
+      formData.append("fitnessGoals", JSON.stringify(fitnessGoals));
+      formData.append("exerciseGenre", JSON.stringify(exerciseGenre));
+      formData.append("timings", timings);
+      formData.append("ambition", JSON.stringify(profile?.ambition ?? []));
+      formData.append("about", profile?.about ?? "");
+
+      const data = await apiFetch<{ profile: IUserWithProfile }>(
+        `/profile/${user.id}`,
+        {
+          method: "PUT",
+          body: formData,
+        },
+        logout,
+      );
+
+      setProfile(data.profile);
+      setFitnessGoals(data.profile.fitnessGoals ?? []);
+      setExerciseGenre(data.profile.exerciseGenre ?? []);
+      setTimings(data.profile.timings ?? "");
+
+      await AsyncStorage.setItem("profile", JSON.stringify(data.profile));
+
+      setProfileImage(null);
+      setCoverImage(null);
+      setIsEditing(false);
+      showToast({
+        type: "success",
+        title: "Saved details",
+        message: "Successfully saved the details",
+      });
+    } catch (err: any) {
+      if (err.message === "SESSION_EXPIRED") {
+        // already logged out by apiFetch
+        showToast({
+          type: "error",
+          title: "Session expired",
+          message: "Login once again or restart ",
+        });
+        return;
+      }
+
+      console.error("Save failed:", err);
+    } finally {
+      setSaving(false);
     }
+  };
 
-    if (coverImage) {
-      formData.append("coverImage", coverImage as any);
-    }
+  const handleRemoveFriend = async (repmateId: string, repmateName: string) => {
+    if (!user?.id) return;
 
-    formData.append("fitnessGoals", JSON.stringify(fitnessGoals));
-    formData.append("exerciseGenre", JSON.stringify(exerciseGenre));
-    formData.append("timings", timings);
-    formData.append("ambition", JSON.stringify(profile?.ambition ?? []));
-    formData.append("about", profile?.about ?? "");
-
-
-    const data = await apiFetch<{ profile: IUserWithProfile }>(
-      `/profile/${user.id}`,
-      {
-        method: "PUT",
-        body: formData, 
-      },
-      logout 
-    );
-
-    setProfile(data.profile);
-    setFitnessGoals(data.profile.fitnessGoals ?? []);
-    setExerciseGenre(data.profile.exerciseGenre ?? []);
-    setTimings(data.profile.timings ?? "");
-
-    await AsyncStorage.setItem(
-      "profile",
-      JSON.stringify(data.profile)
-    );
-
-    setProfileImage(null);
-    setCoverImage(null);
-    setIsEditing(false);
-    showToast({type:"success" ,title:"Saved details" , message:"Successfully saved the details"})
-  } catch (err: any) {
-    if (err.message === "SESSION_EXPIRED") {
-      // already logged out by apiFetch
-      showToast({type:"error" , title:"Session expired" , message:"Login once again or restart "})
-      return;
-    }
-
-    console.error("Save failed:", err);
-  } finally {
-    setSaving(false);
-  }
-};
-
-const handleRemoveFriend = async (repmateId: string, repmateName: string) => {
-  if (!user?.id) return;
-
-  try {
-    const data = await apiFetch<removeResponse>(
-      "/repmate/remove",
-      {
-        method: "DELETE", 
+    try {
+      const data = await apiFetch<removeResponse>("/repmate/remove", {
+        method: "DELETE",
         body: {
           repmateId,
           userId: user.id,
         },
+      });
+
+      if (data?.success) {
+        setRepmates((prev) => prev.filter((m) => m._id !== repmateId));
+
+        showToast({
+          type: "info",
+          title: `Removed ${repmateName}`,
+          message: "Successfully removed from repmates",
+        });
       }
-    );
-
-    if (data?.success) {
-      setRepmates(prev => prev.filter(m => m._id !== repmateId));
-
+    } catch (err) {
+      console.error(err);
       showToast({
-        type: "info",
-        title: `Removed ${repmateName}`,
-        message: "Successfully removed from repmates",
+        type: "error",
+        title: "Failed",
+        message: "Could not remove repmate",
       });
     }
-  } catch (err) {
-    console.error(err);
-    showToast({
-      type: "error",
-      title: "Failed",
-      message: "Could not remove repmate",
-    });
-  }
-};
+  };
 
-
-
-  // logut 
+  // logut
   const logout = async () => {
-    await AsyncStorage.multiRemove(["user", "profile" ]);
+    await AsyncStorage.multiRemove(["user", "profile"]);
     await AsyncStorage.clear();
     // await useUser().logout();
     await clearUser();
-    router.replace("/(auth)/login");
+    router.replace("/auth/login");
   };
 
   if (!user) {
@@ -329,10 +315,7 @@ const handleRemoveFriend = async (repmateId: string, repmateName: string) => {
   }
 
   const repMates =
-repmates && repmates.length>0
-      ? user.partner
-      : DUMMY_REPMATES;
-
+    repmates && repmates.length > 0 ? user.partner : DUMMY_REPMATES;
 
   return (
     <ScrollView
@@ -413,15 +396,12 @@ repmates && repmates.length>0
             setTimings(t);
             setIsEditing(true);
           }}
-
           timings={timings}
           onEditStart={() => setIsEditing(true)}
         />
 
         {/* repmates */}
-        <Text className="text-white font-bartle text-lg mt-2">
-          RepMates
-        </Text>
+        <Text className="text-white font-bartle text-lg mt-2">RepMates</Text>
         {repmates.map((mate: any) => (
           <RepMateCard
             key={mate._id}
@@ -439,17 +419,16 @@ repmates && repmates.length>0
       {isEditing && (
         <View className="h-12 mx-4 mt-6">
           <TouchableOpacity
-  disabled={saving}
-  onPress={saveChanges}
-  className={`h-full rounded-lg items-center justify-center ${
-    saving ? "bg-green-800" : "bg-green-600"
-  }`}
->
-  <Text className="font-ScienceGothic text-white">
-    {saving ? "Saving..." : "Save Changes"}
-  </Text>
-</TouchableOpacity>
-
+            disabled={saving}
+            onPress={saveChanges}
+            className={`h-full rounded-lg items-center justify-center ${
+              saving ? "bg-green-800" : "bg-green-600"
+            }`}
+          >
+            <Text className="font-ScienceGothic text-white">
+              {saving ? "Saving..." : "Save Changes"}
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -459,9 +438,7 @@ repmates && repmates.length>0
           onPress={logout}
           className="h-full rounded-lg items-center justify-center bg-white"
         >
-          <Text className="font-ScienceGothic text-red-600">
-            Logout
-          </Text>
+          <Text className="font-ScienceGothic text-red-600">Logout</Text>
         </TouchableOpacity>
       </View>
 

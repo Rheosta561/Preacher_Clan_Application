@@ -1,16 +1,9 @@
-import { View, Text, Image, TouchableOpacity } from 'react-native'
-import { useRouter } from 'expo-router'
-import { useState } from 'react'
-import {
-  MoreVertical,
-  MessageCircle,
-  Bell,
-  UserX,
-} from 'lucide-react-native'
-import { Repmate_Profile } from '@/constants/constants'
-import { useUser } from '@/context/userContext'
-import { apiFetch } from '@/utils/Auth/apiFetch'
-import { showToast } from '@/utils/showToast'
+import { Repmate_Profile } from "@/constants/constants";
+import { useUser } from "@/context/userContext";
+import { useRouter } from "expo-router";
+import { Bell, MessageCircle, MoreVertical, UserX } from "lucide-react-native";
+import { useState } from "react";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 // interface Props {
 //   name: string
@@ -19,28 +12,23 @@ import { showToast } from '@/utils/showToast'
 //   receiverId: string
 // }
 
-
-
 export default function RepMateCard({
-  _id , 
+  _id,
   name,
-  username , 
+  username,
   profileImage,
-  onRemove
-
+  onRemove,
 }: Repmate_Profile) {
-const router = useRouter()
+  const router = useRouter();
 
+  const { user } = useUser();
+  const userId = user?.id;
+  const [open, setOpen] = useState(false);
 
-
-const {user} = useUser(); 
-const userId = user?.id ; 
-  const [open, setOpen] = useState(false)
-
-const openChat = (receiverId: string, chatName: string) => {
+  const openChat = (receiverId: string, chatName: string) => {
     router.push({
-      pathname: "/(protected)/chats/ChatScreen",
-      params: { id: receiverId, name: chatName }
+      pathname: "/protected/chats/ChatScreen",
+      params: { id: receiverId, name: chatName },
     });
   };
 
@@ -55,14 +43,16 @@ const openChat = (receiverId: string, chatName: string) => {
           />
           <View>
             <Text
-  numberOfLines={2}
-  ellipsizeMode="tail"
-  className="text-white font-semibold font-bartle text-sm max-w-[250px]"
->
-  {name}
-</Text>
+              numberOfLines={2}
+              ellipsizeMode="tail"
+              className="text-white font-semibold font-bartle text-sm max-w-[250px]"
+            >
+              {name}
+            </Text>
 
-            <Text className="text-zinc-400 text-sm font-ScienceGothic">{username}</Text>
+            <Text className="text-zinc-400 text-sm font-ScienceGothic">
+              {username}
+            </Text>
           </View>
         </View>
 
@@ -75,12 +65,11 @@ const openChat = (receiverId: string, chatName: string) => {
       {/* Dropdown */}
       {open && (
         <View className="absolute right-3 top-14 w-48 bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden z-50">
-          
           {/* Chat */}
           <TouchableOpacity
             onPress={() => {
-              setOpen(false)
-              openChat(_id , name);
+              setOpen(false);
+              openChat(_id, name);
             }}
             className="flex-row items-center gap-3 px-4 py-3 border-b border-zinc-700"
           >
@@ -91,13 +80,15 @@ const openChat = (receiverId: string, chatName: string) => {
           {/* Remind workout */}
           <TouchableOpacity
             onPress={() => {
-              setOpen(false)
-              console.log('Workout reminder sent')
+              setOpen(false);
+              console.log("Workout reminder sent");
             }}
             className="flex-row items-center gap-3 px-4 py-3 border-b border-zinc-700"
           >
             <Bell size={18} color="white" />
-            <Text className="text-white text-sm font-ScienceGothic">Remind workout</Text>
+            <Text className="text-white text-sm font-ScienceGothic">
+              Remind workout
+            </Text>
           </TouchableOpacity>
 
           {/* Remove friend */}
@@ -110,9 +101,8 @@ const openChat = (receiverId: string, chatName: string) => {
               Remove friend
             </Text>
           </TouchableOpacity>
-
         </View>
       )}
     </View>
-  )
+  );
 }
